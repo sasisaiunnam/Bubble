@@ -5,27 +5,44 @@ import {
   TextField,
   Box,
   Typography,
+  CircularProgress,
   useTheme,
 } from '@mui/material';
 import FormCard from '../../components/UI/FormCard';
+import axiosInstance from '../../components/UI/axiosInstance';
 
 function ForgotPassword() {
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const theme = useTheme();
 
   const handleChange = (e) => {
+    setError('');
     setEmail(e.target.value);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // In a real app, you would send this data to your backend API
-    // POST /api/auth/forgot-password
-    console.log('Forgot password request for email:', email);
+    setLoading(true);
+    setError('');
 
-    // On success, navigate to the reset password page, passing the email
-    navigate('/reset-password', { state: { email: email } });
+    try {
+      // Call the backend API to send a password reset OTP
+      await axiosInstance.post('/auth/forgot-password', { email });
+
+      // On success, navigate to the reset password page, passing the email
+      navigate('/reset-password', { state: { email: email } });
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message ||
+        'Failed to send reset OTP. Please try again.';
+      setError(errorMessage);
+      console.error('Forgot Password error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -47,6 +64,11 @@ function ForgotPassword() {
           onChange={handleChange}
           sx={{ '& .MuiOutlinedInput-root': { borderRadius: '50px' } }}
         />
+        {error && (
+          <Typography color="error" variant="body2" align="center" sx={{ mt: 2 }}>
+            {error}
+          </Typography>
+        )}
         <Button
           type="submit"
           fullWidth
@@ -57,7 +79,7 @@ function ForgotPassword() {
             borderRadius: '50px',
           }}
         >
-          Send Reset OTP
+          {loading ? <CircularProgress size={24} color="inherit" /> : 'Send Reset OTP'}
         </Button>
       </Box>
     </FormCard>
