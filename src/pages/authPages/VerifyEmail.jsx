@@ -4,38 +4,61 @@ import {
   TextField,
   Box,
   Typography,
+  CircularProgress,
   useTheme,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import FormCard from '../../components/UI/FormCard';
+import axiosInstance from '../../components/UI/axiosInstance';
 
 function VerifyEmail() {
   const location = useLocation();
   const navigate = useNavigate();
   const theme = useTheme();
-  const [formData, setFormData] = useState({
-    email: location.state?.email || '',
-    otp: '',
-    username: '',
-    password: '',
-  });
+  const [otp, setOtp] = useState('');
+  const token = location.state?.token || null;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // If no email is passed in state, redirect back to the start of registration
-    if (!location.state?.email) {
+    if (!location.state?.email || !location.state?.token) {
       navigate('/register');
     }
   }, [location, navigate]);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError('');
+    setOtp(e.target.value);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // In a real app, you would send this data to your backend API
-    // POST /api/auth/verify-email
-    console.log('Verification data submitted:', formData);
+    setLoading(true);
+    setError('');
+
+    try {
+      await axiosInstance.post(
+        '/auth/verify-email',
+        { otp },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      navigate('/create-user', {
+        state: { email: location.state.email, token },
+      });
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message ||
+        'Verification failed. Please check the OTP and try again.';
+      setError(errorMessage);
+      console.error('Verification error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -53,8 +76,7 @@ function VerifyEmail() {
           label="Email Address"
           name="email"
           autoComplete="email"
-          value={formData.email}
-          // onChange is removed to prevent changes
+          value={location.state?.email || ''}
           sx={{ '& .MuiOutlinedInput-root': { borderRadius: '50px' } }}
         />
         <TextField
@@ -62,37 +84,17 @@ function VerifyEmail() {
           required
           fullWidth
           id="otp"
-          label="One-Time Password (OTP)"
+          label="Verification Code"
           name="otp"
-          value={formData.otp}
+          value={otp}
           onChange={handleChange}
           sx={{ '& .MuiOutlinedInput-root': { borderRadius: '50px' } }}
         />
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          id="username"
-          label="Username"
-          name="username"
-          autoComplete="username"
-          value={formData.username}
-          onChange={handleChange}
-          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '50px' } }}
-        />
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          name="password"
-          label="Password"
-          type="password"
-          id="password"
-          autoComplete="new-password"
-          value={formData.password}
-          onChange={handleChange}
-          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '50px' } }}
-        />
+        {error && (
+          <Typography color="error" variant="body2" align="center" sx={{ mt: 2 }}>
+            {error}
+          </Typography>
+        )}
         <Button
           type="submit"
           fullWidth
@@ -103,7 +105,7 @@ function VerifyEmail() {
             borderRadius: '50px',
           }}
         >
-          Create Account
+          {loading ? <CircularProgress size={24} color="inherit" /> : 'Create Account'}
         </Button>
       </Box>
     </FormCard>

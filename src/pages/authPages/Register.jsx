@@ -5,27 +5,45 @@ import {
   TextField,
   Box,
   Typography,
+  CircularProgress,
   useTheme,
 } from '@mui/material';
 import FormCard from '../../components/UI/FormCard';
+import axiosInstance from '../../components/UI/axiosInstance';
 
 function Register() {
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const theme = useTheme();
 
   const handleChange = (e) => {
+    setError('');
     setEmail(e.target.value);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // In a real app, you would send this data to your backend API
-    // POST /api/auth/register
-    console.log('Registration request for email:', email);
+    setLoading(true);
+    setError('');
 
-    // On success, navigate to the verification page, passing the email
-    navigate('/verify-email', { state: { email: email } });
+    try {
+      // Call the backend API to send a verification OTP
+      const response = await axiosInstance.post('/auth/register', { email });
+      const verificationToken = response.data.verificationToken;
+
+      // On success, navigate to the verification page, passing the email and token
+      navigate('/verify-email', { state: { email: email, token: verificationToken } });
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message ||
+        'Failed to send verification code. Please try again.';
+      setError(errorMessage);
+      console.error('Registration error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -47,6 +65,11 @@ function Register() {
           onChange={handleChange}
           sx={{ '& .MuiOutlinedInput-root': { borderRadius: '50px' } }}
         />
+        {error && (
+          <Typography color="error" variant="body2" align="center" sx={{ mt: 2 }}>
+            {error}
+          </Typography>
+        )}
         <Button
           type="submit"
           fullWidth
@@ -57,7 +80,7 @@ function Register() {
             borderRadius: '50px',
           }}
         >
-          Send Verification Code
+          {loading ? <CircularProgress size={24} color="inherit" /> : 'Send Verification Code'}
         </Button>
       </Box>
     </FormCard>

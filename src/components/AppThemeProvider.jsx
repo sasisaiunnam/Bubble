@@ -26,7 +26,10 @@ export const AppThemeProvider = ({ children }) => {
 
   return (
     <ThemeToggleContext.Provider value={value}>
-      <MuiThemeProvider theme={theme}>{children}</MuiThemeProvider>
+      <MuiThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </MuiThemeProvider>
     </ThemeToggleContext.Provider>
   );
 };

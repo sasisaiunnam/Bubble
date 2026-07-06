@@ -4,10 +4,12 @@ import {
   TextField,
   Box,
   Typography,
+  CircularProgress,
   useTheme,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import FormCard from '../../components/UI/FormCard';
+import axiosInstance from '../../components/UI/axiosInstance';
 
 function ResetPassword() {
   const location = useLocation();
@@ -18,6 +20,8 @@ function ResetPassword() {
     otp: '',
     newPassword: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     // If no email is passed in state, redirect back to the start of the flow
@@ -27,16 +31,30 @@ function ResetPassword() {
   }, [location, navigate]);
 
   const handleChange = (e) => {
+    setError('');
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // In a real app, you would send this data to your backend API
-    // POST /api/auth/reset-password
-    console.log('Reset password data submitted:', formData);
-    // On success, you would likely navigate to the login page
-    // navigate('/');
+    setLoading(true);
+    setError('');
+
+    try {
+      // Call the backend API to reset the password
+      await axiosInstance.post('/auth/reset-password', formData);
+
+      // On success, navigate to the login page
+      navigate('/login');
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message ||
+        'Failed to reset password. Please check the OTP and try again.';
+      setError(errorMessage);
+      console.error('Reset Password error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -80,6 +98,11 @@ function ResetPassword() {
           onChange={handleChange}
           sx={{ '& .MuiOutlinedInput-root': { borderRadius: '50px' } }}
         />
+        {error && (
+          <Typography color="error" variant="body2" align="center" sx={{ mt: 2 }}>
+            {error}
+          </Typography>
+        )}
         <Button
           type="submit"
           fullWidth
@@ -90,7 +113,7 @@ function ResetPassword() {
             borderRadius: '50px',
           }}
         >
-          Update Password
+          {loading ? <CircularProgress size={24} color="inherit" /> : 'Update Password'}
         </Button>
       </Box>
     </FormCard>
