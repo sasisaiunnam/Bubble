@@ -13,43 +13,97 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { db } from '../../db';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../../store/slices/authSlice';
 
-const initialMessages = [
-  { id: 1, text: 'Hey! How are you?', sender: 'other', timestamp: '10:00 AM' },
-  { id: 2, text: 'I am good, thanks! How about you?', sender: 'me', timestamp: '10:01 AM' },
-  { id: 3, text: 'Doing great. Are we still on for tomorrow?', sender: 'other', timestamp: '10:01 AM' },
-  { id: 4, text: 'Yes, absolutely! Looking forward to it.', sender: 'me', timestamp: '10:02 AM' },
+const emptyPlaceholder = [
+  { id: 1, text: 'Select a conversation to see messages here.', sender: 'system', timestamp: '' },
 ];
 
 function ChatScreen({ conversation, onBack }) {
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState(emptyPlaceholder);
   const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const currentUser = useSelector(selectCurrentUser);
+  console.log('Current User:', currentUser);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  useEffect(() => {
+    if (!conversation) {
+      setMessages(emptyPlaceholder);
+      return;
+    }
+
+    const loadMessages = async () => {
+      setLoading(true);
+      const storedMessages = await db.messages
+        .where('conversationId')
+        .equals(conversation.conversationId || conversation.id)
+        .sortBy('timestamp');
+
+      if (storedMessages.length > 0) {
+        setMessages(storedMessages);
+      } else {
+        setMessages([]);
+      }
+      setLoading(false);
+    };
+
+    loadMessages();
+  }, [conversation]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = (e) => {
+  if (!conversation) {
+    return (
+      <Box
+        sx={{
+          p: 4,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          textAlign: 'center',
+          gap: 2,
+        }}
+      >
+        <Avatar src={currentUser?.profilePic} sx={{ width: 120, height: 120 }} />
+        <Typography variant="h5">Welcome, {currentUser?.username || 'User'}!</Typography>
+        <Typography variant="h6" color="text.secondary">Select a bubble to start chatting</Typography>
+      </Box>
+    );
+  }
+
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (newMessage.trim()) {
       const newMsg = {
-        id: messages.length + 1,
+        conversationId: conversation.conversationId || conversation.id,
         text: newMessage,
         sender: 'me',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: new Date().toISOString(),
       };
-      setMessages([...messages, newMsg]);
+
+      await db.messages.add(newMsg);
+      setMessages((prev) => [...prev, newMsg]);
       setNewMessage('');
     }
   };
+
+  const conversationType = conversation?.type || 'Chat';
+  const placeholderText = conversation?.type === 'Group'
+    ? `Send a message to ${conversation.name} bubble...`
+    : `Message ${conversation.name}...`;
 
   return (
     <Box
@@ -62,14 +116,21 @@ function ChatScreen({ conversation, onBack }) {
     >
       {/* Chat Header */}
       <AppBar position="static" color="default" sx={{ boxShadow: 'none', borderBottom: '1px solid rgba(0, 0, 0, 0.12)' }}>
-        <Toolbar>
-          {isMobile && (
-            <IconButton edge="start" color="inherit" onClick={onBack} sx={{ mr: 1 }}>
-              <ArrowBackIcon />
-            </IconButton>
-          )}
-          <Avatar alt={conversation.name} src={conversation.profilePic} sx={{ mr: 2 }} />
-          <Typography variant="h6">{conversation.name}</Typography>
+        <Toolbar sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1, py: 1.25 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+            {isMobile && (
+              <IconButton edge="start" color="inherit" onClick={onBack} sx={{ mr: 1 }}>
+                <ArrowBackIcon />
+              </IconButton>
+            )}
+            <Avatar alt={conversation.name} src={conversation.profilePic} sx={{ mr: 2 }} />
+            <Box>
+              <Typography variant="h6">{conversation.name}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {conversationType}
+              </Typography>
+            </Box>
+          </Box>
         </Toolbar>
       </AppBar>
 
@@ -126,7 +187,7 @@ function ChatScreen({ conversation, onBack }) {
         <TextField
           fullWidth
           variant="standard"
-          placeholder="Type a message..."
+          placeholder={placeholderText}
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           autoComplete="off"
