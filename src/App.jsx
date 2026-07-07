@@ -13,6 +13,9 @@ import ResetPassword from './pages/authPages/ResetPassword';
 import ChatPage from './pages/chatPages/ChatPage';
 import PublicRoute from './components/PublicRoute';
 import ProtectedRoute from './components/ProtectedRoute';
+import UserProfile from './pages/usersPage/UserProfile';
+import EditProfile from './pages/usersPage/EditProfile';
+import LocationPage from './pages/locationPages/location';
 
 function App() {
   const { toggleTheme, mode } = useThemeToggle();
@@ -40,6 +43,9 @@ function App() {
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/chat" element={<ChatPage />} />
+          <Route path="/profile" element={<UserProfile />} />
+          <Route path="/profile/edit" element={<EditProfile />} />
+          <Route path="/location" element={<LocationPage />} />
         </Route>
       </Routes>
     </>

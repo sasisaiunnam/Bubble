@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, CssBaseline, useTheme, useMediaQuery, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from './sidebar';
 import ChatScreen from './chatScreen';
 
@@ -12,6 +13,15 @@ function ChatPage() {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
+
+  // On mount, check for location consent. If not granted, redirect to the location page.
+  useEffect(() => {
+    const consentStatus = localStorage.getItem('locationConsent');
+    if (consentStatus === null) {
+      navigate('/location');
+    }
+  }, [navigate]);
 
   const handleConversationSelect = (conversation) => {
     setSelectedConversation(conversation);
@@ -40,8 +50,8 @@ function ChatPage() {
           display: { xs: selectedConversation ? 'block' : 'none', sm: 'block' },
         }}
       >
-        {/* On mobile, ChatScreen is only rendered when a convo is selected. On desktop, it's always there. */}
-        {selectedConversation && <ChatScreen conversation={selectedConversation} onBack={handleBack} />}
+        {/* On mobile, ChatScreen is only visible after a selection. On desktop, a placeholder shows until a conversation is chosen. */}
+        <ChatScreen conversation={selectedConversation} onBack={handleBack} />
       </Box>
     </Box>
   );
