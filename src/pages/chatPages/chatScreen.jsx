@@ -16,6 +16,8 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { db } from '../../db';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../store/slices/authSlice';
+import { getImageUrl } from '../../utils/imageUrl';
+import { socket } from '../../socket';
 
 const emptyPlaceholder = [
   { id: 1, text: 'Select a conversation to see messages here.', sender: 'system', timestamp: '' },
@@ -29,31 +31,34 @@ function ChatScreen({ conversation, onBack }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const currentUser = useSelector(selectCurrentUser);
-  console.log('Current User:', currentUser);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
-    if (!conversation) {
+    const conversationId = conversation?._id;
+
+    if (!conversationId) {
       setMessages(emptyPlaceholder);
       return;
     }
 
     const loadMessages = async () => {
       setLoading(true);
-      const storedMessages = await db.messages
-        .where('conversationId')
-        .equals(conversation.conversationId || conversation.id)
-        .sortBy('timestamp');
+      try {
+        const storedMessages = await db.messages
+          .where('conversationId')
+          .equals(conversationId)
+          .sortBy('timestamp');
 
-      if (storedMessages.length > 0) {
-        setMessages(storedMessages);
-      } else {
+        setMessages(storedMessages.length > 0 ? storedMessages : []);
+      } catch (error) {
+        console.error("Failed to load messages:", error);
         setMessages([]);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     loadMessages();
@@ -62,6 +67,26 @@ function ChatScreen({ conversation, onBack }) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    if (!conversation?._id) return;
+
+    socket.emit('joinRoom', conversation._id);
+
+    const handleNewMessage = async (message) => {
+      if (message.conversationId === conversation._id) {
+        await db.messages.add(message);
+        setMessages((prev) => [...prev, message]);
+      }
+    };
+
+    socket.on('newMessage', handleNewMessage);
+
+    return () => {
+      socket.emit('leaveRoom', conversation._id);
+      socket.off('newMessage', handleNewMessage);
+    };
+  }, [conversation]);
 
   if (!conversation) {
     return (
@@ -77,7 +102,7 @@ function ChatScreen({ conversation, onBack }) {
           gap: 2,
         }}
       >
-        <Avatar src={currentUser?.profilePic} sx={{ width: 120, height: 120 }} />
+        <Avatar src={getImageUrl(currentUser?.profilePic)} sx={{ width: 120, height: 120 }} />
         <Typography variant="h5">Welcome, {currentUser?.username || 'User'}!</Typography>
         <Typography variant="h6" color="text.secondary">Select a bubble to start chatting</Typography>
       </Box>
@@ -86,13 +111,15 @@ function ChatScreen({ conversation, onBack }) {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (newMessage.trim()) {
+    if (newMessage.trim() && conversation?._id) {
       const newMsg = {
-        conversationId: conversation.conversationId || conversation.id,
+        conversationId: conversation._id,
         text: newMessage,
-        sender: 'me',
+        sender: currentUser._id,
         timestamp: new Date().toISOString(),
       };
+
+      socket.emit('sendMessage', newMsg);
 
       await db.messages.add(newMsg);
       setMessages((prev) => [...prev, newMsg]);
@@ -123,7 +150,7 @@ function ChatScreen({ conversation, onBack }) {
                 <ArrowBackIcon />
               </IconButton>
             )}
-            <Avatar alt={conversation.name} src={conversation.profilePic} sx={{ mr: 2 }} />
+            <Avatar alt={conversation.name} src={getImageUrl(conversation.profilePic)} sx={{ mr: 2 }} />
             <Box>
               <Typography variant="h6">{conversation.name}</Typography>
               <Typography variant="body2" color="text.secondary">
@@ -148,17 +175,25 @@ function ChatScreen({ conversation, onBack }) {
             key={msg.id}
             sx={{
               display: 'flex',
-              justifyContent: msg.sender === 'me' ? 'flex-end' : 'flex-start',
+              justifyContent: msg.sender === currentUser._id ? 'flex-end' : 'flex-start',
               mb: 2,
+              alignItems: 'center', // Align items vertically
             }}
           >
+            {msg.sender !== currentUser._id && (
+              <Avatar
+                alt={conversation.name}
+                src={getImageUrl(conversation.profilePic)}
+                sx={{ mr: 1.5 }}
+              />
+            )}
             <Paper
               variant="outlined"
               sx={{
                 p: 1.5,
-                bgcolor: msg.sender === 'me' ? 'primary.main' : 'background.paper',
-                color: msg.sender === 'me' ? 'primary.contrastText' : 'text.primary',
-                borderRadius: msg.sender === 'me' ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
+                bgcolor: msg.sender === currentUser._id ? 'primary.main' : 'background.paper',
+                color: msg.sender === currentUser._id ? 'primary.contrastText' : 'text.primary',
+                borderRadius: msg.sender === currentUser._id ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
                 maxWidth: '70%',
               }}
             >
@@ -167,6 +202,13 @@ function ChatScreen({ conversation, onBack }) {
                 {msg.timestamp}
               </Typography>
             </Paper>
+            {msg.sender === currentUser._id && (
+              <Avatar
+                alt={currentUser.username}
+                src={getImageUrl(currentUser.profilePic)}
+                sx={{ ml: 1.5 }}
+              />
+            )}
           </Box>
         ))}
         <div ref={messagesEndRef} />
