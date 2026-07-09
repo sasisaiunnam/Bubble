@@ -7,3 +7,5 @@ export const store = configureStore({
     // ... other reducers can be added here
   },
 });
+
+export default store;

@@ -7,9 +7,10 @@ import {
   CircularProgress,
   useTheme,
 } from '@mui/material';
+import { ArrowBack } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import FormCard from '../../components/UI/FormCard';
-import axiosInstance from '../../components/UI/axiosInstance';
+import axiosInstance from '../../components/axiosInstance';
 
 function VerifyEmail() {
   const location = useLocation();
@@ -103,10 +104,36 @@ function VerifyEmail() {
             mt: 3,
             mb: 2,
             borderRadius: '50px',
+            color: theme.palette.primary.contrastText,
+            background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
+            transition: 'transform 0.2s ease-in-out, opacity 0.2s',
+            '&:hover': {
+              transform: 'scale(1.05)',
+              opacity: 0.9,
+            },
           }}
         >
           {loading ? <CircularProgress size={24} color="inherit" /> : 'Create Account'}
         </Button>
+
+        {/* Back to Register */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+          <Button
+            startIcon={<ArrowBack />}
+            onClick={() => navigate('/register')}
+            disabled={loading}
+            sx={{
+              textTransform: 'none',
+              color: theme.palette.text.secondary,
+              '&:hover': {
+                color: theme.palette.primary.main,
+                background: 'transparent',
+              },
+            }}
+          >
+            Wrong email? Go Back
+          </Button>
+        </Box>
       </Box>
     </FormCard>
   );
