@@ -260,6 +260,10 @@ const authSlice = createSlice({
     setProfilePicUrl: (state, action) => {
       state.profilePicUrl = action.payload;
     },
+    // Update auth token dynamically (e.g., from refresh interceptor)
+    updateToken: (state, action) => {
+      state.token = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -418,6 +422,7 @@ export const {
   resetAuthStatus,
   updateUserLocally,
   setProfilePicUrl,
+  updateToken,
 } = authSlice.actions;
 
 // =============================================

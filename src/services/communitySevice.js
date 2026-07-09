@@ -2,7 +2,7 @@ import axiosInstance from "../components/axiosInstance";
 
 export const autoJoinBubble = async (latitude, longitude, token) => {
     const { data } = await axiosInstance.post(
-        "/api/community/auto-join",
+        "/community/auto-join",
         {
             latitude,
             longitude,
@@ -18,7 +18,7 @@ export const autoJoinBubble = async (latitude, longitude, token) => {
 };
 
 export const getDiscoverableCommunities = async (token) => {
-    const { data } = await axiosInstance.get('/api/community/discover', {
+    const { data } = await axiosInstance.get('/community/discover', {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -28,7 +28,7 @@ export const getDiscoverableCommunities = async (token) => {
 
 export const joinCommunity = async (communityId, token) => {
     const { data } = await axiosInstance.post(
-        '/api/community/auto-join',
+        '/community/auto-join',
         { communityId },
         {
             headers: {
@@ -42,7 +42,7 @@ export const joinCommunity = async (communityId, token) => {
 
 export const sendFriendRequest = async (receiverId, token) => {
     const { data } = await axiosInstance.post(
-        `/api/user/friend-request/${receiverId}`,
+        `/user/friend-request/${receiverId}`,
         {}, // No body needed as receiverId is in the URL
         {
             headers: {

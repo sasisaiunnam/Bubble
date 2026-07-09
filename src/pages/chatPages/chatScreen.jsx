@@ -153,7 +153,16 @@ function ChatScreen({ conversation, onBack }) {
   useEffect(() => {
     if (!conversation?._id) return;
 
-    socket.emit('joinRoom', conversation._id);
+    const joinActiveRoom = () => {
+      socket.emit('joinRoom', conversation._id);
+      console.log('🔄 Rejoined active chat room on connect/reconnect:', conversation._id);
+    };
+
+    // Join room immediately on mount/conversation change
+    joinActiveRoom();
+
+    // Rejoin the room if the socket connection connects/reconnects
+    socket.on('connect', joinActiveRoom);
 
     const handleNewMessage = (message) => {
       if (message.conversationId === conversation._id) {
@@ -166,11 +175,10 @@ function ChatScreen({ conversation, onBack }) {
       }
     };
 
-
-
     socket.on('newMessage', handleNewMessage);
 
     return () => {
+      socket.off('connect', joinActiveRoom);
       socket.emit('leaveRoom', conversation._id);
       socket.off('newMessage', handleNewMessage);
     };
@@ -221,8 +229,7 @@ function ChatScreen({ conversation, onBack }) {
     }
   };
 
-  const conversations = db.conversations.toArray();
-  console.log(conversations);
+
 
   const conversationType = conversation?.type || 'Chat';
   const placeholderText = conversation?.type === 'Group'
