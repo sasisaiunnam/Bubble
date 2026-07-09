@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, CssBaseline, useTheme, useMediaQuery } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -23,6 +23,27 @@ function ChatPage() {
   const dispatch = useDispatch();
   const currentUser = useSelector(selectCurrentUser);
   const token = useSelector((state) => state.auth.token);
+
+  const selectedConversationRef = useRef(null);
+
+  // Sync ref with selectedConversation state and clear unread flag upon selection
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation;
+    if (selectedConversation?._id) {
+      db.conversations
+        .where('conversationId')
+        .equals(selectedConversation._id)
+        .first()
+        .then(async (record) => {
+          if (record && record.unread) {
+            record.unread = false;
+            await db.conversations.put(record);
+            console.log('📖 Marked conversation as read:', selectedConversation._id);
+          }
+        })
+        .catch((err) => console.error('Failed to clear unread flag on select:', err));
+    }
+  }, [selectedConversation]);
 
   // On mount, check for location consent. If not granted, redirect to the location page.
   useEffect(() => {
@@ -53,6 +74,8 @@ function ChatPage() {
       // Global receiver to store incoming messages to IndexedDB in the background
       const handleGlobalNewMessage = async (message) => {
         try {
+          if (!message.conversationId) return;
+
           // Check if message exists to prevent duplicates
           const exists = await db.messages
             .where('timestamp')
@@ -70,10 +93,21 @@ function ChatPage() {
             console.log('📩 Message saved to local database globally:', message.text);
           }
 
-          // If it's a DM, verify the local conversation exists so the chat displays in the sidebar
-          if (message.conversationId && message.conversationId.startsWith('dm_')) {
-            let conversation = await db.conversations.where('conversationId').equals(message.conversationId).first();
-            if (!conversation) {
+          // Check if user is currently viewing this conversation
+          const isCurrentChat = selectedConversationRef.current && selectedConversationRef.current._id === message.conversationId;
+
+          // Update/Create conversation in Dexie and track unread status
+          let conversation = await db.conversations.where('conversationId').equals(message.conversationId).first();
+
+          if (conversation) {
+            if (conversation.unread !== !isCurrentChat) {
+              conversation.unread = !isCurrentChat;
+              await db.conversations.put(conversation);
+              console.log(`💬 Updated conversation unread status: ${message.conversationId} = ${!isCurrentChat}`);
+            }
+          } else {
+            // Create conversation entry if missing
+            if (message.conversationId.startsWith('dm_')) {
               const parts = message.conversationId.replace('dm_', '').split('_');
               const otherUserId = parts.find(id => id !== currentUser._id.toString());
               
@@ -84,6 +118,7 @@ function ChatPage() {
                   _id: message.conversationId,
                   name: otherUser.username,
                   type: 'DM',
+                  unread: !isCurrentChat,
                   members: [
                     { _id: currentUser._id, username: currentUser.username, profilePic: currentUser.profilePic },
                     { _id: otherUser._id, username: otherUser.username, profilePic: otherUser.profilePic }
@@ -91,9 +126,20 @@ function ChatPage() {
                 };
                 await db.conversations.add(newConv);
                 console.log('👥 Created local conversation for incoming DM:', otherUser.username);
-                // Refresh sidebar lists
                 dispatch(fetchUserCommunities());
               }
+            } else {
+              // It's a Community Bubble (Group Chat)
+              const newConv = {
+                conversationId: message.conversationId,
+                _id: message.conversationId,
+                name: 'Community Chat', // Fallback
+                type: 'Group',
+                unread: !isCurrentChat,
+                members: []
+              };
+              await db.conversations.add(newConv);
+              console.log('👥 Created local conversation for Group Chat:', message.conversationId);
             }
           }
         } catch (err) {

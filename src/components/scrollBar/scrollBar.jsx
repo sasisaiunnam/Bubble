@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
+  Badge,
   Typography,
   Avatar,
   List,
@@ -30,6 +31,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import PeopleIcon from '@mui/icons-material/People';
 
 import { db } from '../../db';
+import { socket } from '../../socket';
 
 import {
   selectCurrentUser,
@@ -72,6 +74,70 @@ function ScrollBar({ onConversationSelect }) {
   const currentUser = useSelector(selectCurrentUser);
   const communities = useSelector(selectUserCommunities);
   const token = useSelector((state) => state.auth.token);
+
+  const [unreadConversationIds, setUnreadConversationIds] = useState(new Set());
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
+
+  // Listen for real-time online status changes from backend via WebSocket
+  useEffect(() => {
+    // Request initial online users list
+    socket.emit('getOnlineUsers');
+
+    const handleOnlineUsersList = (usersList) => {
+      setOnlineUsers(new Set(usersList));
+    };
+
+    const handleUserStatusChanged = ({ userId, isOnline }) => {
+      setOnlineUsers((prev) => {
+        const next = new Set(prev);
+        if (isOnline) {
+          next.add(userId);
+        } else {
+          next.delete(userId);
+        }
+        return next;
+      });
+    };
+
+    socket.on('onlineUsersList', handleOnlineUsersList);
+    socket.on('userStatusChanged', handleUserStatusChanged);
+
+    // Re-request online status list upon socket reconnection
+    const handleReconnect = () => {
+      socket.emit('getOnlineUsers');
+    };
+    socket.on('connect', handleReconnect);
+
+    return () => {
+      socket.off('onlineUsersList', handleOnlineUsersList);
+      socket.off('userStatusChanged', handleUserStatusChanged);
+      socket.off('connect', handleReconnect);
+    };
+  }, []);
+
+  // Periodically check for unread messages in local Dexie database
+  useEffect(() => {
+    const checkUnread = async () => {
+      try {
+        const allConversations = await db.conversations.toArray();
+        const ids = new Set(
+          allConversations
+            .filter((c) => c.unread === true)
+            .map((c) => c.conversationId)
+        );
+        setUnreadConversationIds(ids);
+      } catch (err) {
+        console.error('Failed to query unread conversations in memory:', err);
+      }
+    };
+
+    checkUnread();
+    const timer = setInterval(checkUnread, 1500);
+    return () => clearInterval(timer);
+  }, []);
+
+  const hasUnreadDMs = Array.from(unreadConversationIds).some(id => id.startsWith('dm_'));
+  const hasUnreadBubbles = Array.from(unreadConversationIds).some(id => !id.startsWith('dm_'));
 
   // Dynamic style tokens based on active theme mode (light/dark)
   const isDark = theme.palette.mode === 'dark';
@@ -311,8 +377,26 @@ function ScrollBar({ onConversationSelect }) {
         }}
       >
         <Tab icon={<PersonAddIcon fontSize="small" />} iconPosition="start" label="Suggestions" value="suggestions" />
-        <Tab icon={<PeopleIcon fontSize="small" />} iconPosition="start" label="Friends" value="friends" />
-        <Tab icon={<GroupIcon fontSize="small" />} iconPosition="start" label="Bubbles" value="communities" />
+        <Tab 
+          icon={
+            <Badge color="error" variant="dot" invisible={!hasUnreadDMs} sx={{ '& .MuiBadge-badge': { backgroundColor: '#ef5350' } }}>
+              <PeopleIcon fontSize="small" />
+            </Badge>
+          } 
+          iconPosition="start" 
+          label="Friends" 
+          value="friends" 
+        />
+        <Tab 
+          icon={
+            <Badge color="error" variant="dot" invisible={!hasUnreadBubbles} sx={{ '& .MuiBadge-badge': { backgroundColor: '#ef5350' } }}>
+              <GroupIcon fontSize="small" />
+            </Badge>
+          } 
+          iconPosition="start" 
+          label="Bubbles" 
+          value="communities" 
+        />
       </Tabs>
 
       {/* Styled Search Input */}
@@ -602,9 +686,49 @@ function ScrollBar({ onConversationSelect }) {
                     }}
                   >
                     <ListItemAvatar>
-                      <Avatar src={getImageUrl(friend.profilePic)}>
-                        {friend.username.charAt(0).toUpperCase()}
-                      </Avatar>
+                      <Badge
+                        color="error"
+                        variant="dot"
+                        overlap="circular"
+                        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                        invisible={!unreadConversationIds.has(`dm_${[currentUser?._id, friend._id].sort().join('_')}`)}
+                        sx={{
+                          '& .MuiBadge-badge': {
+                            backgroundColor: '#ef5350',
+                            boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            animation: 'pulse 1.5s infinite ease-in-out',
+                            '@keyframes pulse': {
+                              '0%': { transform: 'scale(0.8)', opacity: 0.8 },
+                              '50%': { transform: 'scale(1.2)', opacity: 1 },
+                              '100%': { transform: 'scale(0.8)', opacity: 0.8 },
+                            }
+                          }
+                        }}
+                      >
+                        <Badge
+                          color="success"
+                          variant="dot"
+                          overlap="circular"
+                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                          invisible={!onlineUsers.has(friend._id)}
+                          sx={{
+                            '& .MuiBadge-badge': {
+                              backgroundColor: '#4caf50',
+                              boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+                              width: 10,
+                              height: 10,
+                              borderRadius: '50%',
+                            }
+                          }}
+                        >
+                          <Avatar src={getImageUrl(friend.profilePic)}>
+                            {friend.username.charAt(0).toUpperCase()}
+                          </Avatar>
+                        </Badge>
+                      </Badge>
                     </ListItemAvatar>
                     <ListItemText
                       primary={<Typography variant="body2" sx={{ fontWeight: 600 }}>{friend.username}</Typography>}
@@ -659,9 +783,32 @@ function ScrollBar({ onConversationSelect }) {
                       }}
                     >
                       <ListItemAvatar>
-                        <Avatar src={getImageUrl(bubble.avatarUrl)}>
-                          {bubble.isDefault ? 'B' : <PublicIcon />}
-                        </Avatar>
+                        <Badge
+                          color="error"
+                          variant="dot"
+                          overlap="circular"
+                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                          invisible={!unreadConversationIds.has(bubble._id)}
+                          sx={{
+                            '& .MuiBadge-badge': {
+                              backgroundColor: '#ef5350',
+                              boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              animation: 'pulse 1.5s infinite ease-in-out',
+                              '@keyframes pulse': {
+                                '0%': { transform: 'scale(0.8)', opacity: 0.8 },
+                                '50%': { transform: 'scale(1.2)', opacity: 1 },
+                                '100%': { transform: 'scale(0.8)', opacity: 0.8 },
+                              }
+                            }
+                          }}
+                        >
+                          <Avatar src={getImageUrl(bubble.avatarUrl)}>
+                            {bubble.isDefault ? 'B' : <PublicIcon />}
+                          </Avatar>
+                        </Badge>
                       </ListItemAvatar>
                       <ListItemText
                         primary={<Typography variant="body2" sx={{ fontWeight: 600 }}>{bubble.name}</Typography>}
@@ -710,9 +857,32 @@ function ScrollBar({ onConversationSelect }) {
                       }}
                     >
                       <ListItemAvatar>
-                        <Avatar src={getImageUrl(bubble.avatarUrl)}>
-                          <GroupIcon />
-                        </Avatar>
+                        <Badge
+                          color="error"
+                          variant="dot"
+                          overlap="circular"
+                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                          invisible={!unreadConversationIds.has(bubble._id)}
+                          sx={{
+                            '& .MuiBadge-badge': {
+                              backgroundColor: '#ef5350',
+                              boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              animation: 'pulse 1.5s infinite ease-in-out',
+                              '@keyframes pulse': {
+                                '0%': { transform: 'scale(0.8)', opacity: 0.8 },
+                                '50%': { transform: 'scale(1.2)', opacity: 1 },
+                                '100%': { transform: 'scale(0.8)', opacity: 0.8 },
+                              }
+                            }
+                          }}
+                        >
+                          <Avatar src={getImageUrl(bubble.avatarUrl)}>
+                            <GroupIcon />
+                          </Avatar>
+                        </Badge>
                       </ListItemAvatar>
                       <ListItemText
                         primary={<Typography variant="body2" sx={{ fontWeight: 600 }}>{bubble.name}</Typography>}

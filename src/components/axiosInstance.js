@@ -97,6 +97,11 @@ axiosInstance.interceptors.response.use(
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
         originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
 
+        // Dispatch action to update Redux store so socket connects with fresh token
+        const { store } = await import('../store/store');
+        const { updateToken } = await import('../store/slices/authSlice');
+        store.dispatch(updateToken(newToken));
+
         processQueue(null, newToken);
         isRefreshing = false;
 
@@ -109,6 +114,11 @@ axiosInstance.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         delete axiosInstance.defaults.headers.common['Authorization'];
+
+        // Clear token from Redux store to trigger socket disconnect/cleanup
+        const { store } = await import('../store/store');
+        const { updateToken } = await import('../store/slices/authSlice');
+        store.dispatch(updateToken(null));
 
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';

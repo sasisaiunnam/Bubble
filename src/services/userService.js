@@ -1,7 +1,7 @@
 import axiosInstance from '../components/axiosInstance';
 
 export const getUserById = async (userId, token) => {
-  const { data } = await axiosInstance.get(`/api/user/${userId}`, {
+  const { data } = await axiosInstance.get(`/user/${userId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -10,7 +10,7 @@ export const getUserById = async (userId, token) => {
 };
 
 export const getFriendshipStatus = async (otherUserId, token) => {
-  const { data } = await axiosInstance.get(`/api/user/friend-status/${otherUserId}`, {
+  const { data } = await axiosInstance.get(`/user/friend-status/${otherUserId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -19,7 +19,7 @@ export const getFriendshipStatus = async (otherUserId, token) => {
 };
 
 export const getAllUsers = async (token) => {
-  const { data } = await axiosInstance.get('/api/user', {
+  const { data } = await axiosInstance.get('/user', {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -28,7 +28,7 @@ export const getAllUsers = async (token) => {
 };
 
 export const getFriendRequests = async (token) => {
-  const { data } = await axiosInstance.get('/api/user/friend-requests', {
+  const { data } = await axiosInstance.get('/user/friend-requests', {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -37,7 +37,7 @@ export const getFriendRequests = async (token) => {
 };
 
 export const acceptFriendRequest = async (requestId, token) => {
-  const { data } = await axiosInstance.put(`/api/user/friend-request/${requestId}/accept`, {}, {
+  const { data } = await axiosInstance.put(`/user/friend-request/${requestId}/accept`, {}, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -46,7 +46,7 @@ export const acceptFriendRequest = async (requestId, token) => {
 };
 
 export const rejectFriendRequest = async (requestId, token) => {
-  const { data } = await axiosInstance.put(`/api/user/friend-request/${requestId}/reject`, {}, {
+  const { data } = await axiosInstance.put(`/user/friend-request/${requestId}/reject`, {}, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -55,7 +55,7 @@ export const rejectFriendRequest = async (requestId, token) => {
 };
 
 export const getFriendSuggestions = async (token) => {
-  const { data } = await axiosInstance.get('/api/user/suggestions', {
+  const { data } = await axiosInstance.get('/user/suggestions', {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -64,7 +64,7 @@ export const getFriendSuggestions = async (token) => {
 };
 
 export const unfriendUser = async (userId, token) => {
-  const { data } = await axiosInstance.post(`/api/user/unfriend/${userId}`, {}, {
+  const { data } = await axiosInstance.post(`/user/unfriend/${userId}`, {}, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
