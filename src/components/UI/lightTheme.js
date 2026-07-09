@@ -4,21 +4,30 @@ const bubbleTheme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#4B6EF5',
+      main: '#387BFF', // Digital ice blue
       contrastText: '#FFFFFF',
     },
     secondary: {
-      main: '#64D8CB',
-      contrastText: '#081B33',
+      main: '#A855F7', // Royal purple/lavender
+      contrastText: '#FFFFFF',
+    },
+    success: {
+      main: '#10B981', // Emerald green
+      contrastText: '#FFFFFF',
+    },
+    warning: {
+      main: '#F59E0B', // Amber warning
+      contrastText: '#FFFFFF',
     },
     background: {
-      default: '#EBF3FF',
-      paper: '#FFFFFF',
+      default: '#F5F7FB',
+      paper: 'rgba(255, 255, 255, 0.85)',
     },
     text: {
-      primary: '#10254E',
-      secondary: '#5B6B91',
+      primary: '#0F172A', // Slate 900
+      secondary: '#475569', // Slate 600
     },
+    divider: 'rgba(0, 0, 0, 0.06)',
   },
   shape: {
     borderRadius: 28,
@@ -33,8 +42,9 @@ const bubbleTheme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          background: 'radial-gradient(circle at top left, rgba(123, 159, 255, 0.18), transparent 24%), radial-gradient(circle at bottom right, rgba(149, 223, 245, 0.16), transparent 24%), #EAF2FF',
+          background: 'radial-gradient(circle at top left, rgba(56, 123, 255, 0.09), transparent 28%), radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.08), transparent 32%), #F5F7FB',
           minHeight: '100vh',
+          color: '#0F172A',
         },
       },
     },
@@ -42,10 +52,20 @@ const bubbleTheme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 32,
-          background: 'rgba(255, 255, 255, 0.96)',
-          boxShadow: '0 24px 60px rgba(75, 110, 245, 0.12)',
-          border: '1px solid rgba(75, 110, 245, 0.08)',
-          backdropFilter: 'blur(12px)',
+          background: 'rgba(255, 255, 255, 0.85)',
+          boxShadow: '0 24px 60px rgba(56, 123, 255, 0.06)',
+          border: '1px solid rgba(56, 123, 255, 0.06)',
+          backdropFilter: 'blur(16px)',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 32,
+          background: 'rgba(255, 255, 255, 0.9)',
+          border: '1px solid rgba(56, 123, 255, 0.06)',
+          boxShadow: '0 20px 48px rgba(56, 123, 255, 0.05)',
         },
       },
     },
@@ -54,7 +74,8 @@ const bubbleTheme = createTheme({
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: 32,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: 'rgba(255, 255, 255, 0.75)',
+            border: '1px solid rgba(0, 0, 0, 0.06)',
           },
         },
       },
@@ -63,7 +84,7 @@ const bubbleTheme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 32,
-          boxShadow: '0 12px 24px rgba(75, 110, 245, 0.16)',
+          boxShadow: '0 12px 24px rgba(56, 123, 255, 0.08)',
         },
       },
     },

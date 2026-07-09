@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   TextField,
@@ -10,6 +11,7 @@ import {
   Toolbar,
   useTheme,
   useMediaQuery,
+  Link,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -18,10 +20,16 @@ import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../store/slices/authSlice';
 import { getImageUrl } from '../../utils/imageUrl';
 import { socket } from '../../socket';
+import { getUserById } from '../../services/userService';
 
 const emptyPlaceholder = [
   { id: 1, text: 'Select a conversation to see messages here.', sender: 'system', timestamp: '' },
 ];
+
+const formatTimestamp = (timestamp) => {
+  if (!timestamp) return '';
+  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 
 function ChatScreen({ conversation, onBack }) {
   const [messages, setMessages] = useState(emptyPlaceholder);
@@ -31,6 +39,10 @@ function ChatScreen({ conversation, onBack }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const currentUser = useSelector(selectCurrentUser);
+  const token = useSelector((state) => state.auth.token);
+  const navigate = useNavigate();
+  const [members, setMembers] = useState({});
+  const fetchedUserIds = useRef(new Set());
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,6 +54,15 @@ function ChatScreen({ conversation, onBack }) {
     if (!conversationId) {
       setMessages(emptyPlaceholder);
       return;
+    }
+
+    // Create a map of members for easy lookup if it's a group chat
+    if (conversation.type === 'Group' && conversation.members) {
+      const membersMap = conversation.members.reduce((acc, member) => {
+        acc[member._id] = member;
+        return acc;
+      }, {});
+      setMembers(membersMap);
     }
 
     const loadMessages = async () => {
@@ -64,21 +85,88 @@ function ChatScreen({ conversation, onBack }) {
     loadMessages();
   }, [conversation]);
 
+  // Reset the fetched set and members when the conversation changes
+  useEffect(() => {
+    fetchedUserIds.current = new Set();
+    setMembers({});
+  }, [conversation?._id]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Fetch profiles of senders who are not in the members cache (unknown users)
+  useEffect(() => {
+    const conversationId = conversation?._id;
+    if (!conversationId || messages.length === 0 || !token) return;
+
+    const fetchUnknownSenders = async () => {
+      const uniqueSenders = [...new Set(messages.map(m => String(m.sender)))];
+      const unknownSenders = uniqueSenders.filter(id => 
+        id !== String(currentUser._id) && 
+        id !== 'system' && 
+        !fetchedUserIds.current.has(id) && 
+        !members[id]
+      );
+
+      if (unknownSenders.length === 0) return;
+
+      // Mark them as fetched/fetching immediately to prevent duplicate requests
+      unknownSenders.forEach(id => fetchedUserIds.current.add(id));
+
+      const newMembersUpdates = {};
+      try {
+        await Promise.all(
+          unknownSenders.map(async (senderId) => {
+            try {
+              const userData = await getUserById(senderId, token);
+              newMembersUpdates[senderId] = {
+                _id: senderId,
+                username: userData.username,
+                profilePic: userData.profilePic
+              };
+            } catch (err) {
+              console.error(`Failed to fetch user info for sender ${senderId}:`, err);
+              newMembersUpdates[senderId] = {
+                _id: senderId,
+                username: 'Unknown User',
+                profilePic: null
+              };
+            }
+          })
+        );
+
+        if (Object.keys(newMembersUpdates).length > 0) {
+          setMembers(prev => ({
+            ...prev,
+            ...newMembersUpdates
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching unknown senders:', err);
+      }
+    };
+
+    fetchUnknownSenders();
+  }, [messages, token, currentUser._id, conversation?._id]);
 
   useEffect(() => {
     if (!conversation?._id) return;
 
     socket.emit('joinRoom', conversation._id);
 
-    const handleNewMessage = async (message) => {
+    const handleNewMessage = (message) => {
       if (message.conversationId === conversation._id) {
-        await db.messages.add(message);
-        setMessages((prev) => [...prev, message]);
+        setMessages((prev) => {
+          if (prev.some(m => m.timestamp === message.timestamp && m.sender === message.sender)) {
+            return prev;
+          }
+          return [...prev, message];
+        });
       }
     };
+
+
 
     socket.on('newMessage', handleNewMessage);
 
@@ -121,16 +209,51 @@ function ChatScreen({ conversation, onBack }) {
 
       socket.emit('sendMessage', newMsg);
 
+
+
       await db.messages.add(newMsg);
       setMessages((prev) => [...prev, newMsg]);
       setNewMessage('');
+
+
+
+
     }
   };
+
+  const conversations = db.conversations.toArray();
+  console.log(conversations);
 
   const conversationType = conversation?.type || 'Chat';
   const placeholderText = conversation?.type === 'Group'
     ? `Send a message to ${conversation.name} bubble...`
     : `Message ${conversation.name}...`;
+
+  const getSenderInfo = (senderId) => {
+    const id = String(senderId);
+
+    if (id === String(currentUser._id)) {
+      return currentUser;
+    }
+
+    if (conversation.type === "DM") {
+      return (
+        conversation.members.find(
+          (m) => String(m._id) === id
+        ) || {
+          username: "Unknown User",
+          profilePic: null,
+        }
+      );
+    }
+
+    return (
+      members[id] || {
+        username: "Unknown User",
+        profilePic: null,
+      }
+    );
+  };
 
   return (
     <Box
@@ -150,7 +273,24 @@ function ChatScreen({ conversation, onBack }) {
                 <ArrowBackIcon />
               </IconButton>
             )}
-            <Avatar alt={conversation.name} src={getImageUrl(conversation.profilePic)} sx={{ mr: 2 }} />
+            {conversation.type === 'DM' && conversation.members ? (
+              <Link
+                component="button"
+                onClick={() => {
+                  const otherMember = conversation.members.find(m => String(m._id) !== String(currentUser._id));
+                  if (otherMember) navigate(`/user/${otherMember._id}`);
+                }}
+                sx={{
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  display: 'contents',
+                }}
+              >
+                <Avatar alt={conversation.name} src={getImageUrl(conversation.members.find(m => m._id !== currentUser._id)?.profilePic)} sx={{ mr: 2, cursor: 'pointer' }} />
+              </Link>
+            ) : (
+              <Avatar alt={conversation.name} src={getImageUrl(conversation.profilePic)} sx={{ mr: 2 }} />
+            )}
             <Box>
               <Typography variant="h6">{conversation.name}</Typography>
               <Typography variant="body2" color="text.secondary">
@@ -175,45 +315,55 @@ function ChatScreen({ conversation, onBack }) {
             key={msg.id}
             sx={{
               display: 'flex',
-              justifyContent: msg.sender === currentUser._id ? 'flex-end' : 'flex-start',
+              flexDirection: 'column',
+              alignItems: String(msg.sender) === String(currentUser._id) ? 'flex-end' : 'flex-start',
               mb: 2,
-              alignItems: 'center', // Align items vertically
             }}
           >
-            {msg.sender !== currentUser._id && (
-              <Avatar
-                alt={conversation.name}
-                src={getImageUrl(conversation.profilePic)}
-                sx={{ mr: 1.5 }}
-              />
-            )}
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 1.5,
-                bgcolor: msg.sender === currentUser._id ? 'primary.main' : 'background.paper',
-                color: msg.sender === currentUser._id ? 'primary.contrastText' : 'text.primary',
-                borderRadius: msg.sender === currentUser._id ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
-                maxWidth: '70%',
-              }}
-            >
-              <Typography variant="body1">{msg.text}</Typography>
-              <Typography variant="caption" sx={{ display: 'block', textAlign: 'right', opacity: 0.7, mt: 0.5 }}>
-                {msg.timestamp}
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+              <Typography variant="caption" sx={{ mx: 1 }}>
+                {getSenderInfo(msg.sender)?.username}
               </Typography>
-            </Paper>
-            {msg.sender === currentUser._id && (
-              <Avatar
-                alt={currentUser.username}
-                src={getImageUrl(currentUser.profilePic)}
-                sx={{ ml: 1.5 }}
-              />
-            )}
+              <Typography variant="caption" color="text.secondary">
+                {formatTimestamp(msg.timestamp)}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              {String(msg.sender) !== String(currentUser._id) && (
+                <RouterLink to={`/user/${msg.sender}`}>
+                  <Avatar
+                    alt={getSenderInfo(msg.sender)?.username}
+                    src={getImageUrl(getSenderInfo(msg.sender)?.profilePic)}
+                    sx={{ mr: 1.5, cursor: 'pointer' }}
+                  />
+                </RouterLink>
+              )}
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 1.5,
+                  bgcolor: String(msg.sender) === String(currentUser._id) ? 'primary.main' : 'background.paper',
+                  color: String(msg.sender) === String(currentUser._id) ? 'primary.contrastText' : 'text.primary',
+                  borderRadius: String(msg.sender) === String(currentUser._id) ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
+                  maxWidth: '70%',
+                }}
+              >
+                <Typography variant="body1">{msg.text}</Typography>
+              </Paper>
+              {msg.sender === currentUser._id && (
+                <RouterLink to={`/user/${currentUser._id}`}>
+                  <Avatar
+                    alt={currentUser.username}
+                    src={getImageUrl(currentUser.profilePic)}
+                    sx={{ ml: 1.5, cursor: 'pointer' }}
+                  />
+                </RouterLink>
+              )}
+            </Box>
           </Box>
         ))}
         <div ref={messagesEndRef} />
       </Box>
-
       {/* Message Input */}
       <Paper
         component="form"

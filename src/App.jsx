@@ -1,5 +1,4 @@
-import React, { useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Box, Switch, FormControlLabel } from '@mui/material';
 import { LightMode, DarkMode } from '@mui/icons-material';
@@ -17,26 +16,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 import UserProfile from './pages/usersPage/UserProfile';
 import EditProfile from './pages/usersPage/EditProfile';
 import LocationPage from './pages/locationPages/location';
-import { socket } from './socket';
-import { selectIsAuthenticated } from './store/slices/authSlice';
 
 function App() {
   const { toggleTheme, mode } = useThemeToggle();
-  const isAuthenticated = useSelector(selectIsAuthenticated);
-  const token = useSelector((state) => state.auth.token);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      socket.auth = { token };
-      socket.connect();
-    } else {
-      socket.disconnect();
-    }
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [isAuthenticated, token]);
 
   return (
     <>
@@ -62,6 +44,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/profile" element={<UserProfile />} />
+          <Route path="/user/:userId" element={<UserProfile />} />
           <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/location" element={<LocationPage />} />
         </Route>

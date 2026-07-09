@@ -3,59 +3,41 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
     Drawer,
-    List,
-    ListItem,
+    Box,
+    Divider,
+    Typography,
     ListItemButton,
     ListItemAvatar,
     Avatar,
     ListItemText,
-    Typography,
-    Box,
-    Divider,
-    IconButton,
-    Tooltip,
     Menu,
     MenuItem,
     ListItemIcon,
-    CircularProgress,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
+import { useTheme } from '@mui/material/styles';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import PublicIcon from '@mui/icons-material/Public';
-import GroupIcon from '@mui/icons-material/Group';
 import LogoutIcon from '@mui/icons-material/Logout';
+import BubbleChartIcon from '@mui/icons-material/BubbleChart';
 import {
     logoutUser,
     selectCurrentUser,
     fetchUserCommunities,
-    selectUserCommunities,
 } from '../../store/slices/authSlice';
 import { getImageUrl } from '../../utils/imageUrl';
-import {
-    autoJoinBubble,
-    getDiscoverableCommunities,
-    joinCommunity,
-} from '../../services/communitySevice';
+import { autoJoinBubble } from '../../services/communitySevice';
+import ScrollBar from '../../components/scrollBar/scrollBar';
 
 const drawerWidth = 300;
 
 function Sidebar({ onConversationSelect }) {
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
+    const theme = useTheme();
 
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const currentUser = useSelector(selectCurrentUser);
-    const communities = useSelector(selectUserCommunities);
-    console.log('Current User:', currentUser);
-    console.log('Communities:', communities);
-
-    // Custom selector to get the token from the auth state
     const token = useSelector((state) => state.auth.token);
-
-    const [discoverable, setDiscoverable] = useState({ loading: false, data: [], error: null });
 
     const handleMenuClick = (event) => {
         setAnchorEl(event.currentTarget);
@@ -75,120 +57,32 @@ function Sidebar({ onConversationSelect }) {
         handleMenuClose();
     };
 
-    const fetchDiscoverableCommunities = async () => {
-        setDiscoverable({ loading: true, data: [], error: null });
-        try {
-            const data = await getDiscoverableCommunities(token);
-            // Ensure that the data received is an array before setting the state
-            setDiscoverable({ loading: false, data: Array.isArray(data) ? data : [], error: null });
-        } catch (err) {
-            const message = err.response?.data?.message || err.message || 'Failed to fetch discoverable communities';
-            setDiscoverable({ loading: false, data: [], error: message });
-        }
-    };
-
-    const handleJoinCommunity = async (communityId) => {
-        try {
-            const joinedCommunity = await joinCommunity(communityId, token);
-
-            // Optimistically update the UI instead of re-fetching everything
-            dispatch(fetchUserCommunities()); // Still refresh user's main list
-            setDiscoverable(prev => ({
-                ...prev,
-                data: prev.data.map(c =>
-                    c._id === joinedCommunity._id
-                        ? { ...c, isMember: true } // Update isMember status on the existing community object
-                        : c
-                ),
-            }));
-
-        } catch (err) {
-            // You might want to show this error to the user in a more friendly way
-            const message = err.response?.data?.message || err.message || 'Failed to join community';
-            console.error('Error joining community:', message);
-            setError(message); // Show error in the sidebar
-        }
-    };
-
-    useEffect(() => {
-        const loadInitialData = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                await Promise.all([
-                    dispatch(fetchUserCommunities()).unwrap(),
-                    fetchDiscoverableCommunities(),
-                ]);
-            } catch (err) {
-                setError(err.message || 'Failed to load data');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (token) loadInitialData();
-    }, [dispatch, token]);
-
     const getCurrentLocation = useCallback(() => {
         if ('geolocation' in navigator) {
             navigator.geolocation.getCurrentPosition(async (position) => {
                 const { latitude, longitude } = position.coords;
                 try {
-                    // Directly call the service responsible for auto-joining a local bubble.
                     const bubble = await autoJoinBubble(latitude, longitude, token);
                     if (bubble) {
-                        // After joining, refresh the user's list of communities.
                         dispatch(fetchUserCommunities());
                     }
                 } catch (error) {
                     console.error('Failed to auto-join bubble:', error);
-                    // Avoid setting an error here if the initial data load is more important
-                    // setError('Could not join local bubble.');
                 }
             }, (error) => {
                 console.error("Geolocation error:", error);
-                // setError("Could not get your location.");
             });
         }
-    }, [dispatch]);
+    }, [dispatch, token]);
 
     useEffect(() => {
         if (token) getCurrentLocation();
-    }, [token, getCurrentLocation]); // Rerun when token becomes available
+    }, [token, getCurrentLocation]);
 
-    const localBubbles = communities.filter(c => c.isDefault);
-    const otherCommunities = communities.filter(c => !c.isDefault);
-
-    if (loading) {
-        return (
-            <Drawer
-                variant="permanent"
-                sx={{
-                    width: drawerWidth,
-                    flexShrink: 0,
-                    [`& .MuiDrawer-paper`]: {
-                        width: drawerWidth,
-                        boxSizing: 'border-box',
-                        borderRight: '1px solid rgba(0, 0, 0, 0.12)',
-                    },
-                    '& .MuiDrawer-paper': {
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        display: 'flex',
-                    },
-                }}
-            >
-                <CircularProgress />
-            </Drawer>
-        );
-    }
-
-    // Helper function to get avatar initials
     const getInitials = (name) => {
         if (!name) return '?';
         return name.charAt(0).toUpperCase();
     };
-
 
     return (
         <Drawer
@@ -199,111 +93,106 @@ function Sidebar({ onConversationSelect }) {
                 [`& .MuiDrawer-paper`]: {
                     width: drawerWidth,
                     boxSizing: 'border-box',
-                    borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRight: theme.palette.mode === 'dark' 
+                        ? '1px solid rgba(255, 255, 255, 0.08)' 
+                        : '1px solid rgba(0, 0, 0, 0.06)',
+                    background: theme.palette.mode === 'dark' 
+                        ? 'rgba(17, 27, 43, 0.85)' 
+                        : 'rgba(255, 255, 255, 0.85)',
+                    backdropFilter: 'blur(20px)',
                 },
             }}
         >
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <Box sx={{ p: 2 }}>
-                    <Typography variant="h5" component="h1" gutterBottom>
-                        Bubbles
+                {/* Stunning Logo Header */}
+                <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <BubbleChartIcon sx={{ 
+                        fontSize: 32, 
+                        color: 'primary.main',
+                        filter: 'drop-shadow(0 0 8px rgba(152, 217, 255, 0.6))',
+                        animation: 'pulse 2s infinite ease-in-out',
+                        '@keyframes pulse': {
+                            '0%, 100%': { transform: 'scale(1)', opacity: 0.8 },
+                            '50%': { transform: 'scale(1.1)', opacity: 1 },
+                        }
+                    }} />
+                    <Typography 
+                        variant="h5" 
+                        component="h1" 
+                        sx={{ 
+                            fontWeight: 800, 
+                            letterSpacing: '0.5px',
+                            background: 'linear-gradient(135deg, #98D9FF 0%, #C88BFF 100%)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            textShadow: '0 0 30px rgba(200, 139, 255, 0.1)',
+                        }}
+                    >
+                        Bubble
                     </Typography>
                 </Box>
-                <Divider />
+                <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.06)', mx: 2, mb: 1 }} />
 
-                <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-                    {error ? (
-                        <Box sx={{ p: 2, textAlign: 'center' }}>
-                            <Typography color="error" variant="body2">
-                                {error}
-                            </Typography>
-                        </Box>
-                    ) : (
-                        <>
-                            {localBubbles.length > 0 && (
-                                <>
-                                    <List subheader={<Typography sx={{ p: 2, fontWeight: 'bold' }} color="text.secondary">Local Bubbles</Typography>} sx={{ width: '100%', bgcolor: 'background.paper', py: 0 }}>
-                                        {localBubbles.map((bubble) => (
-                                            <ListItemButton key={bubble._id} onClick={() => onConversationSelect(bubble)}>
-                                                <ListItemAvatar>
-                                                    <Avatar src={getImageUrl(bubble.avatarUrl)}>{bubble.isDefault ? 'B' : <PublicIcon />}</Avatar>
-                                                </ListItemAvatar>
-                                                <ListItemText primary={bubble.name} secondary={bubble.description || 'Local community'} />
-                                            </ListItemButton>
-                                        ))}
-                                    </List>
-                                    <Divider />
-                                </>
-                            )}
-                            {otherCommunities.length > 0 && (
-                                <List subheader={<Typography sx={{ p: 2, fontWeight: 'bold' }} color="text.secondary">My Communities</Typography>} sx={{ width: '100%', bgcolor: 'background.paper', py: 0 }}>
-                                    {otherCommunities.map((bubble) => (
-                                        <ListItemButton key={bubble._id} onClick={() => onConversationSelect(bubble)}>
-                                            <ListItemAvatar>
-                                                <Avatar src={getImageUrl(bubble.avatarUrl)}><GroupIcon /></Avatar>
-                                            </ListItemAvatar>
-                                            <ListItemText primary={bubble.name} secondary={bubble.description || 'Community'} />
-                                        </ListItemButton>
-                                    ))}
-                                </List>
-                            )}
-                            {/* Discover Communities Section */}
-                            <List subheader={<Typography sx={{ p: 2, fontWeight: 'bold' }} color="text.secondary">Discover</Typography>} sx={{ width: '100%', bgcolor: 'background.paper', py: 0 }}>
-                                {discoverable.loading && <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}><CircularProgress size={24} /></Box>}
-                                {discoverable.error && <Typography color="error" sx={{ p: 2 }}>{discoverable.error}</Typography>}
-                                {discoverable.data.map((community) => (
-                                    <ListItem
-                                        key={community._id}
-                                        secondaryAction={
-                                            !community.isMember && (
-                                                <Tooltip title="Join Community">
-                                                    <IconButton edge="end" aria-label="join" onClick={() => handleJoinCommunity(community._id)}>
-                                                        <AddIcon />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            )
-                                        }
-                                        disablePadding
-                                    >
-                                        <ListItemButton onClick={() => community.isMember && onConversationSelect(community)}>
-                                            <ListItemAvatar>
-                                                <Avatar src={getImageUrl(community.avatarUrl)}><GroupIcon /></Avatar>
-                                            </ListItemAvatar>
-                                            <ListItemText primary={community.name} secondary={community.description || 'Community'} />
-                                        </ListItemButton>
-                                    </ListItem>
-                                ))}
-                            </List>
-                            {communities.length === 0 && !loading && (
-                                <Box sx={{ p: 3, textAlign: 'center' }}>
-                                    <Typography color="text.secondary">
-                                        You haven't joined any communities yet.
-                                    </Typography>
-                                </Box>
-                            )}
-                        </>
-                    )}
+                <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    <ScrollBar onConversationSelect={onConversationSelect} />
                 </Box>
 
-                <Divider />
+                <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.06)', mx: 2, mt: 1 }} />
 
-                <ListItemButton
-                    onClick={handleMenuClick}
-                    sx={{
-                        p: 2,
-                        '&:hover': {
-                            backgroundColor: 'action.hover',
-                        },
-                    }}
-                    aria-controls={open ? 'account-menu' : undefined}
-                    aria-haspopup="true"
-                    aria-expanded={open ? 'true' : undefined}
-                >
-                    <ListItemAvatar>
-                        <Avatar src={getImageUrl(currentUser?.profilePic)}>{getInitials(currentUser?.username)}</Avatar>
-                    </ListItemAvatar>
-                    <ListItemText primary={<Typography noWrap>{currentUser?.username || 'User'}</Typography>} />
-                </ListItemButton>
+                {/* Premium Account Profile Footer */}
+                <Box sx={{ p: 2 }}>
+                    <ListItemButton
+                        onClick={handleMenuClick}
+                        sx={{
+                            p: 1.5,
+                            borderRadius: 4,
+                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            backdropFilter: 'blur(10px)',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            '&:hover': {
+                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                borderColor: 'primary.main',
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 8px 24px rgba(152, 217, 255, 0.12)',
+                            },
+                        }}
+                        aria-controls={open ? 'account-menu' : undefined}
+                        aria-haspopup="true"
+                        aria-expanded={open ? 'true' : undefined}
+                    >
+                        <ListItemAvatar>
+                            <Avatar 
+                                src={getImageUrl(currentUser?.profilePic)}
+                                sx={{ 
+                                    border: '2px solid rgba(255,255,255,0.1)',
+                                    transition: 'all 0.3s ease',
+                                    '.MuiListItemButton-root:hover &': {
+                                        borderColor: 'primary.main',
+                                        boxShadow: '0 0 10px rgba(152, 217, 255, 0.4)',
+                                    }
+                                }}
+                            >
+                                {getInitials(currentUser?.username)}
+                            </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText 
+                            primary={
+                                <Typography noWrap sx={{ fontWeight: 700, fontSize: '0.9rem', color: 'text.primary' }}>
+                                    {currentUser?.username || 'User'}
+                                </Typography>
+                            } 
+                            secondary={
+                                <Typography noWrap variant="caption" sx={{ color: 'text.secondary', opacity: 0.7 }}>
+                                    {currentUser?.bio || 'Click to view profile'}
+                                </Typography>
+                            }
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', pl: 1, opacity: 0.5 }}>
+                            <Typography variant="caption" sx={{ fontSize: '10px' }}>▲</Typography>
+                        </Box>
+                    </ListItemButton>
+                </Box>
 
                 <Menu
                     anchorEl={anchorEl}
@@ -311,43 +200,31 @@ function Sidebar({ onConversationSelect }) {
                     open={open}
                     onClose={handleMenuClose}
                     onClick={handleMenuClose}
-                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                    transformOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                    anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
                     PaperProps={{
                         elevation: 0,
                         sx: {
                             overflow: 'visible',
                             filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
-                            mt: 1.5,
+                            mb: 1.5,
                             '& .MuiAvatar-root': {
                                 width: 32,
                                 height: 32,
                                 ml: -0.5,
                                 mr: 1,
                             },
-                            '&::before': {
-                                content: '""',
-                                display: 'block',
-                                position: 'absolute',
-                                top: 0,
-                                right: 14,
-                                width: 10,
-                                height: 10,
-                                bgcolor: 'background.paper',
-                                transform: 'translateY(-50%) rotate(45deg)',
-                                zIndex: 0,
-                            },
                         },
                     }}
                 >
-                    <MenuItem onClick={handleProfile}>
-                        <ListItemIcon>
+                    <MenuItem onClick={handleProfile} sx={{ gap: 1 }}>
+                        <ListItemIcon sx={{ minWidth: 'auto !important' }}>
                             <AccountCircleIcon fontSize="small" />
                         </ListItemIcon>
                         Profile
                     </MenuItem>
-                    <MenuItem onClick={handleLogout}>
-                        <ListItemIcon>
+                    <MenuItem onClick={handleLogout} sx={{ gap: 1 }}>
+                        <ListItemIcon sx={{ minWidth: 'auto !important' }}>
                             <LogoutIcon fontSize="small" />
                         </ListItemIcon>
                         Logout

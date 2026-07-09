@@ -8,26 +8,30 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { keyframes } from '@mui/system';
+import BubbleChartIcon from '@mui/icons-material/BubbleChart';
 
-// Define the keyframes for the pulsing animation
+// Define the keyframes for the pulsing animation of the logo
 const pulse = keyframes`
   0% {
-    opacity: 0.8;
-    transform: scale(0.98) translateY(0px);
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(56, 123, 255, 0.4));
   }
   50% {
-    opacity: 1;
-    transform: scale(1) translateY(-10px);
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 10px rgba(56, 123, 255, 0.8));
   }
   100% {
-    opacity: 0.8;
-    transform: scale(0.98) translateY(0px);
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(56, 123, 255, 0.4));
   }
 `;
+
 function FormCard({ title, children }) {
-  const theme = useTheme(); // Get the theme object
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
   return (
-    <Container component="main" maxWidth="xs">
+    <Container component="main" maxWidth="sm">
       <CssBaseline />
       <Box
         sx={{
@@ -36,6 +40,7 @@ function FormCard({ title, children }) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          py: 4,
         }}
       >
         <Card
@@ -43,36 +48,56 @@ function FormCard({ title, children }) {
             p: 4,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center',
             alignItems: 'center',
-            width: { xs: '90vw', sm: 420 }, // Responsive width
-            height: { xs: '90vw', sm: 420 }, // Responsive height
-            borderRadius: '50%', // This makes it a circle
-            position: 'relative', // Required for the glare pseudo-element
-            overflow: 'hidden', // Ensures the glare stays within the card's bounds
-            textAlign: 'center', // Center align text like the title
-            // Apply the gradient with a semi-transparent overlay to reduce intensity
-            background: `linear-gradient(
-              ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.6)'},
-              ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.6)'}
-            ), linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
-            color: theme.palette.getContrastText(theme.palette.background.paper), // Ensure text is readable
-            animation: `${pulse} 4s ease-in-out infinite`, // Apply the pulsing animation
-            // Create a subtle glare effect from the top-left
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              background: `radial-gradient(circle at 0% 0%, ${
-                theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.4)'
-              } 0%, transparent 40%)`,
+            width: { xs: '100%', sm: 450 }, // Responsive width
+            borderRadius: '24px', // Premium rounded corners
+            position: 'relative',
+            overflow: 'hidden',
+            textAlign: 'center',
+            background: isDark 
+              ? 'rgba(17, 27, 43, 0.75)' 
+              : 'rgba(255, 255, 255, 0.7)',
+            backdropFilter: 'blur(30px) saturate(120%)',
+            border: '1px solid',
+            borderColor: isDark 
+              ? 'rgba(255, 255, 255, 0.08)' 
+              : 'rgba(0, 0, 0, 0.06)',
+            boxShadow: isDark 
+              ? '0 8px 32px 0 rgba(0, 0, 0, 0.37)' 
+              : '0 8px 32px 0 rgba(31, 38, 135, 0.08)',
+            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: isDark 
+                ? '0 12px 40px 0 rgba(0, 0, 0, 0.45)' 
+                : '0 12px 40px 0 rgba(31, 38, 135, 0.12)',
             },
           }}
         >
-          <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
+          {/* Pulsing Logo Header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
+            <BubbleChartIcon 
+              sx={{ 
+                color: 'primary.main', 
+                fontSize: 36,
+                animation: `${pulse} 2s ease-in-out infinite`
+              }} 
+            />
+            <Typography 
+              variant="h4" 
+              sx={{ 
+                fontWeight: 800, 
+                letterSpacing: -0.5,
+                background: 'linear-gradient(45deg, #387BFF 30%, #A855F7 90%)', 
+                WebkitBackgroundClip: 'text', 
+                WebkitTextFillColor: 'transparent' 
+              }}
+            >
+              Bubble
+            </Typography>
+          </Box>
+
+          <Typography component="h1" variant="h5" sx={{ mb: 3, fontWeight: 700, color: 'text.primary' }}>
             {title}
           </Typography>
           {children}

@@ -8,8 +8,9 @@ import {
   CircularProgress,
   useTheme,
 } from '@mui/material';
+import { ArrowBack } from '@mui/icons-material';
 import FormCard from '../../components/UI/FormCard';
-import axiosInstance from '../../components/UI/axiosInstance';
+import axiosInstance from '../../components/axiosInstance';
 
 function Register() {
   const [email, setEmail] = useState('');
@@ -78,10 +79,36 @@ function Register() {
             mt: 3,
             mb: 2,
             borderRadius: '50px',
+            color: theme.palette.primary.contrastText,
+            background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
+            transition: 'transform 0.2s ease-in-out, opacity 0.2s',
+            '&:hover': {
+              transform: 'scale(1.05)',
+              opacity: 0.9,
+            },
           }}
         >
           {loading ? <CircularProgress size={24} color="inherit" /> : 'Send Verification Code'}
         </Button>
+
+        {/* Back to Login */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+          <Button
+            startIcon={<ArrowBack />}
+            onClick={() => navigate('/login')}
+            disabled={loading}
+            sx={{
+              textTransform: 'none',
+              color: theme.palette.text.secondary,
+              '&:hover': {
+                color: theme.palette.primary.main,
+                background: 'transparent',
+              },
+            }}
+          >
+            Back to Sign In
+          </Button>
+        </Box>
       </Box>
     </FormCard>
   );
