@@ -12,15 +12,22 @@ import {
   useTheme,
   useMediaQuery,
   Link,
+  Menu,
+  MenuItem,
+  Button,
+  ListItemIcon,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { db } from '../../db';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../store/slices/authSlice';
 import { getImageUrl } from '../../utils/imageUrl';
 import { socket } from '../../socket';
 import { getUserById } from '../../services/userService';
+import DeleteMessageDialog from '../../components/chat/DeleteMessageDialog';
 
 const emptyPlaceholder = [
   { id: 1, text: 'Select a conversation to see messages here.', sender: 'system', timestamp: '' },
@@ -35,6 +42,11 @@ function ChatScreen({ conversation, onBack }) {
   const [messages, setMessages] = useState(emptyPlaceholder);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [hoveredMessageId, setHoveredMessageId] = useState(null);
+
   const messagesEndRef = useRef(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -102,10 +114,10 @@ function ChatScreen({ conversation, onBack }) {
 
     const fetchUnknownSenders = async () => {
       const uniqueSenders = [...new Set(messages.map(m => String(m.sender)))];
-      const unknownSenders = uniqueSenders.filter(id => 
-        id !== String(currentUser._id) && 
-        id !== 'system' && 
-        !fetchedUserIds.current.has(id) && 
+      const unknownSenders = uniqueSenders.filter(id =>
+        id !== String(currentUser._id) &&
+        id !== 'system' &&
+        !fetchedUserIds.current.has(id) &&
         !members[id]
       );
 
@@ -175,12 +187,20 @@ function ChatScreen({ conversation, onBack }) {
       }
     };
 
+    const handleMessageDeleted = (data) => {
+      if (data.conversationId === conversation._id) {
+        setMessages((prev) => prev.filter((msg) => !(msg.timestamp === data.timestamp && msg.sender === data.sender)));
+      }
+    };
+
     socket.on('newMessage', handleNewMessage);
+    socket.on('messageDeleted', handleMessageDeleted);
 
     return () => {
       socket.off('connect', joinActiveRoom);
       socket.emit('leaveRoom', conversation._id);
       socket.off('newMessage', handleNewMessage);
+      socket.off('messageDeleted', handleMessageDeleted);
     };
   }, [conversation]);
 
@@ -194,6 +214,7 @@ function ChatScreen({ conversation, onBack }) {
           alignItems: 'center',
           justifyContent: 'center',
           height: '100%',
+          bgcolor: 'background.default',
           textAlign: 'center',
           gap: 2,
         }}
@@ -217,18 +238,63 @@ function ChatScreen({ conversation, onBack }) {
 
       socket.emit('sendMessage', newMsg);
 
-
-
-      await db.messages.add(newMsg);
-      setMessages((prev) => [...prev, newMsg]);
+      const messageId = await db.messages.add(newMsg);
+      const msgWithId = { ...newMsg, id: messageId };
+      setMessages((prev) => [...prev, msgWithId]);
       setNewMessage('');
-
-
-
-
     }
   };
 
+  const handleMenuClick = (event, message) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedMessage(message);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const openDeleteConfirm = () => {
+    setDeleteConfirmOpen(true);
+    handleMenuClose();
+  };
+
+  const closeDeleteConfirm = () => {
+    setDeleteConfirmOpen(false);
+    setSelectedMessage(null);
+  };
+
+  const handleDeleteMessage = async () => {
+    if (!selectedMessage) return;
+    try {
+      if (selectedMessage.id) {
+        await db.messages.delete(selectedMessage.id);
+      } else {
+        const toDelete = await db.messages
+          .where('timestamp')
+          .equals(selectedMessage.timestamp)
+          .and(m => m.sender === selectedMessage.sender)
+          .first();
+        if (toDelete) {
+          await db.messages.delete(toDelete.id);
+        }
+      }
+
+      socket.emit('deleteMessage', {
+        conversationId: conversation._id,
+        sender: selectedMessage.sender,
+        timestamp: selectedMessage.timestamp,
+        text: selectedMessage.text,
+      });
+
+      setMessages((prev) =>
+        prev.filter((msg) => !(msg.timestamp === selectedMessage.timestamp && msg.sender === selectedMessage.sender))
+      );
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+    }
+    closeDeleteConfirm();
+  };
 
 
   const conversationType = conversation?.type || 'Chat';
@@ -321,11 +387,15 @@ function ChatScreen({ conversation, onBack }) {
           <Box
             key={msg.id}
             sx={{
+              position: 'relative',
               display: 'flex',
               flexDirection: 'column',
               alignItems: String(msg.sender) === String(currentUser._id) ? 'flex-end' : 'flex-start',
               mb: 2,
+              '&:hover .message-actions': { opacity: 1 },
             }}
+            onMouseEnter={() => setHoveredMessageId(msg.id)}
+            onMouseLeave={() => setHoveredMessageId(null)}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
               <Typography variant="caption" sx={{ mx: 1 }}>
@@ -335,7 +405,26 @@ function ChatScreen({ conversation, onBack }) {
                 {formatTimestamp(msg.timestamp)}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+              {String(msg.sender) === String(currentUser._id) && (
+                <Box
+                  className="message-actions"
+                  sx={{
+                    opacity: hoveredMessageId === msg.id ? 1 : 0,
+                    transition: 'opacity 0.2s',
+                    mr: 1,
+                  }}
+                >
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleMenuClick(e, msg)}
+                  >
+                    <MoreVertIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              )}
+
+
               {String(msg.sender) !== String(currentUser._id) && (
                 <RouterLink to={`/user/${msg.sender}`}>
                   <Avatar
@@ -353,6 +442,7 @@ function ChatScreen({ conversation, onBack }) {
                   color: String(msg.sender) === String(currentUser._id) ? 'primary.contrastText' : 'text.primary',
                   borderRadius: String(msg.sender) === String(currentUser._id) ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
                   maxWidth: '70%',
+                  wordBreak: 'break-word',
                 }}
               >
                 <Typography variant="body1">{msg.text}</Typography>
@@ -371,6 +461,7 @@ function ChatScreen({ conversation, onBack }) {
         ))}
         <div ref={messagesEndRef} />
       </Box>
+
       {/* Message Input */}
       <Paper
         component="form"
@@ -397,6 +488,29 @@ function ChatScreen({ conversation, onBack }) {
           <SendIcon />
         </IconButton>
       </Paper>
+
+      {/* Message Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem onClick={openDeleteConfirm} sx={{ color: 'error.main' }}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          Delete Message
+        </MenuItem>
+      </Menu>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteMessageDialog
+        open={deleteConfirmOpen}
+        onClose={closeDeleteConfirm}
+        onConfirm={handleDeleteMessage}
+      />
     </Box>
   );
 }
