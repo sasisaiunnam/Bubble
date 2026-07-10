@@ -378,21 +378,13 @@ function ScrollBar({ onConversationSelect }) {
       >
         <Tab icon={<PersonAddIcon fontSize="small" />} iconPosition="start" label="Suggestions" value="suggestions" />
         <Tab 
-          icon={
-            <Badge color="error" variant="dot" invisible={!hasUnreadDMs} sx={{ '& .MuiBadge-badge': { backgroundColor: '#ef5350' } }}>
-              <PeopleIcon fontSize="small" />
-            </Badge>
-          } 
+          icon={<PeopleIcon fontSize="small" />} 
           iconPosition="start" 
           label="Friends" 
           value="friends" 
         />
         <Tab 
-          icon={
-            <Badge color="error" variant="dot" invisible={!hasUnreadBubbles} sx={{ '& .MuiBadge-badge': { backgroundColor: '#ef5350' } }}>
-              <GroupIcon fontSize="small" />
-            </Badge>
-          } 
+          icon={<GroupIcon fontSize="small" />} 
           iconPosition="start" 
           label="Bubbles" 
           value="communities" 
@@ -686,28 +678,6 @@ function ScrollBar({ onConversationSelect }) {
                     }}
                   >
                     <ListItemAvatar>
-                      <Badge
-                        color="error"
-                        variant="dot"
-                        overlap="circular"
-                        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                        invisible={!unreadConversationIds.has(`dm_${[currentUser?._id, friend._id].sort().join('_')}`)}
-                        sx={{
-                          '& .MuiBadge-badge': {
-                            backgroundColor: '#ef5350',
-                            boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            animation: 'pulse 1.5s infinite ease-in-out',
-                            '@keyframes pulse': {
-                              '0%': { transform: 'scale(0.8)', opacity: 0.8 },
-                              '50%': { transform: 'scale(1.2)', opacity: 1 },
-                              '100%': { transform: 'scale(0.8)', opacity: 0.8 },
-                            }
-                          }
-                        }}
-                      >
                         <Badge
                           color="success"
                           variant="dot"
@@ -728,7 +698,6 @@ function ScrollBar({ onConversationSelect }) {
                             {friend.username.charAt(0).toUpperCase()}
                           </Avatar>
                         </Badge>
-                      </Badge>
                     </ListItemAvatar>
                     <ListItemText
                       primary={<Typography variant="body2" sx={{ fontWeight: 600 }}>{friend.username}</Typography>}
@@ -783,32 +752,9 @@ function ScrollBar({ onConversationSelect }) {
                       }}
                     >
                       <ListItemAvatar>
-                        <Badge
-                          color="error"
-                          variant="dot"
-                          overlap="circular"
-                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                          invisible={!unreadConversationIds.has(bubble._id)}
-                          sx={{
-                            '& .MuiBadge-badge': {
-                              backgroundColor: '#ef5350',
-                              boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              animation: 'pulse 1.5s infinite ease-in-out',
-                              '@keyframes pulse': {
-                                '0%': { transform: 'scale(0.8)', opacity: 0.8 },
-                                '50%': { transform: 'scale(1.2)', opacity: 1 },
-                                '100%': { transform: 'scale(0.8)', opacity: 0.8 },
-                              }
-                            }
-                          }}
-                        >
                           <Avatar src={getImageUrl(bubble.avatarUrl)}>
                             {bubble.isDefault ? 'B' : <PublicIcon />}
                           </Avatar>
-                        </Badge>
                       </ListItemAvatar>
                       <ListItemText
                         primary={<Typography variant="body2" sx={{ fontWeight: 600 }}>{bubble.name}</Typography>}
@@ -857,32 +803,9 @@ function ScrollBar({ onConversationSelect }) {
                       }}
                     >
                       <ListItemAvatar>
-                        <Badge
-                          color="error"
-                          variant="dot"
-                          overlap="circular"
-                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                          invisible={!unreadConversationIds.has(bubble._id)}
-                          sx={{
-                            '& .MuiBadge-badge': {
-                              backgroundColor: '#ef5350',
-                              boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              animation: 'pulse 1.5s infinite ease-in-out',
-                              '@keyframes pulse': {
-                                '0%': { transform: 'scale(0.8)', opacity: 0.8 },
-                                '50%': { transform: 'scale(1.2)', opacity: 1 },
-                                '100%': { transform: 'scale(0.8)', opacity: 0.8 },
-                              }
-                            }
-                          }}
-                        >
                           <Avatar src={getImageUrl(bubble.avatarUrl)}>
                             <GroupIcon />
                           </Avatar>
-                        </Badge>
                       </ListItemAvatar>
                       <ListItemText
                         primary={<Typography variant="body2" sx={{ fontWeight: 600 }}>{bubble.name}</Typography>}
