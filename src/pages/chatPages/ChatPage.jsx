@@ -147,12 +147,34 @@ function ChatPage() {
         }
       };
 
+      const handleGlobalMessageDeleted = async (data) => {
+        try {
+          if (!data.conversationId) return;
+
+          // Find the message in db by timestamp and sender
+          const messageToDelete = await db.messages
+            .where('timestamp')
+            .equals(data.timestamp)
+            .and(m => m.sender === data.sender)
+            .first();
+
+          if (messageToDelete) {
+            await db.messages.delete(messageToDelete.id);
+            console.log('🗑️ Message deleted from local database globally:', data.text || '');
+          }
+        } catch (err) {
+          console.error('Failed to handle incoming message deletion globally:', err);
+        }
+      };
+
       socket.on('newMessage', handleGlobalNewMessage);
+      socket.on('messageDeleted', handleGlobalMessageDeleted);
 
       return () => {
         socket.off('connect');
         socket.off('connect_error');
         socket.off('newMessage', handleGlobalNewMessage);
+        socket.off('messageDeleted', handleGlobalMessageDeleted);
         socket.disconnect();
         console.log('🔌 Socket disconnected.');
       };
