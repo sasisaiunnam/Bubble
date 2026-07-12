@@ -17,4 +17,14 @@ db.version(1).stores({
   keyStore: '&keyName', // To store our own keys
 });
 
+db.version(2).stores({
+  conversations: '++id, &conversationId, name',
+  messages: '++id, conversationId, timestamp',
+  users: '&userId, username',
+  keyStore: '&keyName',
+  // Stores image blobs for chat messages.
+  // Each entry is referenced by a unique imageId from the messages table.
+  chatImages: '++id, &imageId, conversationId',
+});
+
 export default db;

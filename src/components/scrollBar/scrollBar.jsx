@@ -20,6 +20,7 @@ import {
   TextField,
   InputAdornment,
   useTheme,
+  Chip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
@@ -29,6 +30,8 @@ import GroupIcon from '@mui/icons-material/Group';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import SearchIcon from '@mui/icons-material/Search';
 import PeopleIcon from '@mui/icons-material/People';
+import LockIcon from '@mui/icons-material/Lock';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 
 import { db } from '../../db';
 import { socket } from '../../socket';
@@ -50,7 +53,13 @@ import {
   sendFriendRequest,
   getDiscoverableCommunities,
   joinCommunity,
+  createCommunity,
+  getMyInvites,
+  acceptInvite,
+  declineInvite,
+  requestToJoinCommunity,
 } from '../../services/communitySevice';
+import CreateBubbleDialog from '../chat/CreateBubbleDialog';
 
 function ScrollBar({ onConversationSelect }) {
   const [activeTab, setActiveTab] = useState('communities');
@@ -67,6 +76,16 @@ function ScrollBar({ onConversationSelect }) {
   // Discoverable Communities State
   const [discoverable, setDiscoverable] = useState({ loading: false, data: [], error: null });
   const [joiningCommunityState, setJoiningCommunityState] = useState({});
+
+  // Create Bubble Dialog State
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  // Pending Invites State
+  const [pendingInvites, setPendingInvites] = useState({ loading: false, data: [], error: null });
+  const [updatingInvite, setUpdatingInvite] = useState({});
+
+  // Join Request State
+  const [requestingJoin, setRequestingJoin] = useState({});
 
   const theme = useTheme();
   const navigate = useNavigate();
@@ -206,6 +225,22 @@ function ScrollBar({ onConversationSelect }) {
     }
   }, [token]);
 
+  // 4. Fetch pending invites
+  const fetchInvitesData = useCallback(async () => {
+    if (!token) return;
+    setPendingInvites((prev) => ({ ...prev, loading: true, error: null }));
+    try {
+      const data = await getMyInvites(token);
+      setPendingInvites({ loading: false, data: Array.isArray(data) ? data : [], error: null });
+    } catch (err) {
+      setPendingInvites({
+        loading: false,
+        data: [],
+        error: err.response?.data?.message || err.message || 'Failed to load invites',
+      });
+    }
+  }, [token]);
+
   // Load data based on active tab
   useEffect(() => {
     if (activeTab === 'suggestions') {
@@ -216,8 +251,9 @@ function ScrollBar({ onConversationSelect }) {
     } else if (activeTab === 'communities') {
       dispatch(fetchUserCommunities());
       fetchDiscoverableData();
+      fetchInvitesData();
     }
-  }, [activeTab, fetchSuggestionsData, fetchRequestsData, fetchDiscoverableData, dispatch]);
+  }, [activeTab, fetchSuggestionsData, fetchRequestsData, fetchDiscoverableData, fetchInvitesData, dispatch]);
 
   // Handle Add Friend Action
   const handleAddFriend = async (userId) => {
@@ -284,6 +320,66 @@ function ScrollBar({ onConversationSelect }) {
       console.error('Failed to join community:', err);
     } finally {
       setJoiningCommunityState((prev) => ({ ...prev, [communityId]: false }));
+    }
+  };
+
+  // Handle Create Community
+  const handleCreateCommunity = async (communityData) => {
+    const created = await createCommunity(communityData, token);
+    dispatch(fetchUserCommunities());
+    fetchDiscoverableData();
+    return created;
+  };
+
+  // Handle Request to Join (private community)
+  const handleRequestJoin = async (communityId) => {
+    setRequestingJoin((prev) => ({ ...prev, [communityId]: true }));
+    try {
+      await requestToJoinCommunity(communityId, token);
+      setDiscoverable((prev) => ({
+        ...prev,
+        data: prev.data.map((c) =>
+          c._id === communityId ? { ...c, hasRequestedJoin: true } : c
+        ),
+      }));
+    } catch (err) {
+      console.error('Failed to request join:', err);
+    } finally {
+      setRequestingJoin((prev) => ({ ...prev, [communityId]: false }));
+    }
+  };
+
+  // Handle Accept Invite
+  const handleAcceptInvite = async (communityId) => {
+    setUpdatingInvite((prev) => ({ ...prev, [communityId]: true }));
+    try {
+      await acceptInvite(communityId, token);
+      setPendingInvites((prev) => ({
+        ...prev,
+        data: prev.data.filter((c) => c._id !== communityId),
+      }));
+      dispatch(fetchUserCommunities());
+      fetchDiscoverableData();
+    } catch (err) {
+      console.error('Failed to accept invite:', err);
+    } finally {
+      setUpdatingInvite((prev) => ({ ...prev, [communityId]: false }));
+    }
+  };
+
+  // Handle Decline Invite
+  const handleDeclineInvite = async (communityId) => {
+    setUpdatingInvite((prev) => ({ ...prev, [communityId]: true }));
+    try {
+      await declineInvite(communityId, token);
+      setPendingInvites((prev) => ({
+        ...prev,
+        data: prev.data.filter((c) => c._id !== communityId),
+      }));
+    } catch (err) {
+      console.error('Failed to decline invite:', err);
+    } finally {
+      setUpdatingInvite((prev) => ({ ...prev, [communityId]: false }));
     }
   };
 
@@ -399,28 +495,30 @@ function ScrollBar({ onConversationSelect }) {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           fullWidth
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-              </InputAdornment>
-            ),
-            sx: {
-              borderRadius: 4,
-              backgroundColor: searchBg,
-              fontSize: '0.875rem',
-              height: '38px',
-              border: '1px solid',
-              borderColor: searchBorder,
-              transition: 'all 0.3s',
-              '&:hover': {
-                borderColor: searchHoverBorder,
-                backgroundColor: searchHoverBg,
-              },
-              '&.Mui-focused': {
-                borderColor: 'primary.main',
-                backgroundColor: searchHoverBg,
-                boxShadow: searchFocusShadow,
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: 4,
+                backgroundColor: searchBg,
+                fontSize: '0.875rem',
+                height: '38px',
+                border: '1px solid',
+                borderColor: searchBorder,
+                transition: 'all 0.3s',
+                '&:hover': {
+                  borderColor: searchHoverBorder,
+                  backgroundColor: searchHoverBg,
+                },
+                '&.Mui-focused': {
+                  borderColor: 'primary.main',
+                  backgroundColor: searchHoverBg,
+                  boxShadow: searchFocusShadow,
+                },
               },
             },
           }}
@@ -715,6 +813,136 @@ function ScrollBar({ onConversationSelect }) {
         {/* ============================================= */}
         {activeTab === 'communities' && (
           <>
+            {/* Create Bubble Button */}
+            <Box sx={{ px: 1, mb: 1.5 }}>
+              <ListItemButton
+                onClick={() => setCreateDialogOpen(true)}
+                sx={{
+                  borderRadius: 3,
+                  border: '1px dashed',
+                  borderColor: isDark ? 'rgba(152, 217, 255, 0.25)' : 'rgba(56, 123, 255, 0.25)',
+                  backgroundColor: isDark ? 'rgba(152, 217, 255, 0.04)' : 'rgba(56, 123, 255, 0.03)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1,
+                  py: 1.25,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    backgroundColor: isDark ? 'rgba(152, 217, 255, 0.08)' : 'rgba(56, 123, 255, 0.06)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: isDark ? '0 4px 16px rgba(152, 217, 255, 0.12)' : '0 4px 16px rgba(56, 123, 255, 0.1)',
+                  },
+                }}
+              >
+                <AddIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main', fontSize: '0.82rem' }}>
+                  Create New Bubble
+                </Typography>
+              </ListItemButton>
+            </Box>
+
+            {/* Pending Invites Section */}
+            {pendingInvites.data.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    mx: 1,
+                    my: 1,
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 1,
+                    backgroundColor: isDark ? 'rgba(200, 139, 255, 0.08)' : 'rgba(168, 85, 247, 0.08)',
+                    border: '1px solid',
+                    borderColor: isDark ? 'rgba(200, 139, 255, 0.15)' : 'rgba(168, 85, 247, 0.15)',
+                    color: 'secondary.main',
+                    fontWeight: 'bold',
+                    textTransform: 'uppercase',
+                    letterSpacing: 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                  }}
+                >
+                  <LockIcon sx={{ fontSize: 14 }} />
+                  Bubble Invites ({pendingInvites.data.length})
+                </Typography>
+                <List sx={{ p: 0, mt: 0.75 }}>
+                  {pendingInvites.data.map((invite) => (
+                    <ListItem
+                      key={invite._id}
+                      secondaryAction={
+                        <Box sx={{ display: 'flex', gap: 0.75 }}>
+                          <Tooltip title="Accept">
+                            <IconButton
+                              edge="end"
+                              color="success"
+                              size="small"
+                              onClick={() => handleAcceptInvite(invite._id)}
+                              disabled={updatingInvite[invite._id]}
+                              sx={{
+                                backgroundColor: 'rgba(46, 125, 50, 0.1)',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  backgroundColor: 'rgba(46, 125, 50, 0.2)',
+                                  transform: 'scale(1.15)',
+                                },
+                              }}
+                            >
+                              {updatingInvite[invite._id] ? <CircularProgress size={16} /> : <CheckIcon fontSize="small" />}
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Decline">
+                            <IconButton
+                              edge="end"
+                              color="error"
+                              size="small"
+                              onClick={() => handleDeclineInvite(invite._id)}
+                              disabled={updatingInvite[invite._id]}
+                              sx={{
+                                backgroundColor: 'rgba(211, 47, 47, 0.1)',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  backgroundColor: 'rgba(211, 47, 47, 0.2)',
+                                  transform: 'scale(1.15)',
+                                },
+                              }}
+                            >
+                              {updatingInvite[invite._id] ? <CircularProgress size={16} /> : <ClearIcon fontSize="small" />}
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      }
+                      sx={{
+                        borderRadius: 3,
+                        mb: 0.75,
+                        backgroundColor: isDark ? 'rgba(200, 139, 255, 0.03)' : 'rgba(168, 85, 247, 0.03)',
+                        border: '1px dashed',
+                        borderColor: isDark ? 'rgba(200, 139, 255, 0.15)' : 'rgba(168, 85, 247, 0.15)',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '&:hover': {
+                          transform: 'translateX(4px)',
+                        },
+                      }}
+                    >
+                      <ListItemAvatar>
+                        <Avatar src={getImageUrl(invite.avatarUrl)}>
+                          <LockIcon fontSize="small" />
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={<Typography variant="body2" sx={{ fontWeight: 600 }}>{invite.name}</Typography>}
+                        secondary={<Typography variant="caption" noWrap sx={{ display: 'block' }}>{invite.description || 'Private bubble invite'}</Typography>}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+                <Divider sx={{ my: 1.5, borderColor: borderCol }} />
+              </Box>
+            )}
+
             {/* Local Bubbles */}
             {localBubbles.length > 0 && (
               <Box sx={{ mb: 2 }}>
@@ -804,11 +1032,18 @@ function ScrollBar({ onConversationSelect }) {
                     >
                       <ListItemAvatar>
                           <Avatar src={getImageUrl(bubble.avatarUrl)}>
-                            <GroupIcon />
+                            {bubble.isPublic === false ? <LockIcon fontSize="small" /> : <GroupIcon />}
                           </Avatar>
                       </ListItemAvatar>
                       <ListItemText
-                        primary={<Typography variant="body2" sx={{ fontWeight: 600 }}>{bubble.name}</Typography>}
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{bubble.name}</Typography>
+                            {bubble.isPublic === false && (
+                              <LockIcon sx={{ fontSize: 12, color: isDark ? '#C88BFF' : '#A855F7', opacity: 0.7 }} />
+                            )}
+                          </Box>
+                        }
                         secondary={<Typography variant="caption" noWrap color="text.secondary" sx={{ display: 'block' }}>{bubble.description || 'Community'}</Typography>}
                       />
                     </ListItemButton>
@@ -859,11 +1094,75 @@ function ScrollBar({ onConversationSelect }) {
               )}
 
               <List sx={{ p: 0, mt: 0.75 }}>
-                {filteredDiscoverable.map((community) => (
-                  <ListItem
-                    key={community._id}
-                    secondaryAction={
-                      !community.isMember && (
+                {filteredDiscoverable.map((community) => {
+                  // Determine the action button for each community
+                  const renderAction = () => {
+                    if (community.isMember) return null;
+
+                    // Has a pending invite from admin
+                    if (community.hasInvite) {
+                      return (
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="Accept Invite">
+                            <IconButton
+                              edge="end"
+                              color="success"
+                              size="small"
+                              onClick={() => handleAcceptInvite(community._id)}
+                              disabled={updatingInvite[community._id]}
+                              sx={{
+                                backgroundColor: 'rgba(46, 125, 50, 0.1)',
+                                transition: 'all 0.2s',
+                                '&:hover': { backgroundColor: 'rgba(46, 125, 50, 0.2)', transform: 'scale(1.15)' },
+                              }}
+                            >
+                              {updatingInvite[community._id] ? <CircularProgress size={16} /> : <CheckIcon fontSize="small" />}
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Decline">
+                            <IconButton
+                              edge="end"
+                              color="error"
+                              size="small"
+                              onClick={() => handleDeclineInvite(community._id)}
+                              disabled={updatingInvite[community._id]}
+                              sx={{
+                                backgroundColor: 'rgba(211, 47, 47, 0.1)',
+                                transition: 'all 0.2s',
+                                '&:hover': { backgroundColor: 'rgba(211, 47, 47, 0.2)', transform: 'scale(1.15)' },
+                              }}
+                            >
+                              {updatingInvite[community._id] ? <CircularProgress size={16} /> : <ClearIcon fontSize="small" />}
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      );
+                    }
+
+                    // Already requested to join
+                    if (community.hasRequestedJoin) {
+                      return (
+                        <Tooltip title="Join Requested">
+                          <Chip
+                            icon={<HourglassEmptyIcon sx={{ fontSize: 14 }} />}
+                            label="Pending"
+                            size="small"
+                            sx={{
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              backgroundColor: isDark ? 'rgba(255, 183, 77, 0.1)' : 'rgba(255, 152, 0, 0.08)',
+                              color: isDark ? '#FFB74D' : '#F57C00',
+                              border: '1px solid',
+                              borderColor: isDark ? 'rgba(255, 183, 77, 0.25)' : 'rgba(255, 152, 0, 0.2)',
+                            }}
+                          />
+                        </Tooltip>
+                      );
+                    }
+
+                    // Public community — direct join
+                    if (community.isPublic) {
+                      return (
                         <Tooltip title="Join Community">
                           <IconButton
                             edge="end"
@@ -885,35 +1184,74 @@ function ScrollBar({ onConversationSelect }) {
                             )}
                           </IconButton>
                         </Tooltip>
-                      )
+                      );
                     }
-                    sx={{
-                      borderRadius: 3,
-                      mb: 0.75,
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      '&:hover': {
-                        backgroundColor: hoverBg,
-                        transform: 'translateX(4px)',
-                      },
-                    }}
-                  >
-                    <ListItemButton
-                      onClick={() => community.isMember && onConversationSelect(community)}
-                      disabled={!community.isMember}
-                      sx={{ p: 0, borderRadius: 3 }}
+
+                    // Private community — request to join
+                    return (
+                      <Tooltip title="Request to Join">
+                        <IconButton
+                          edge="end"
+                          color="secondary"
+                          onClick={() => handleRequestJoin(community._id)}
+                          disabled={requestingJoin[community._id]}
+                          sx={{
+                            transition: 'all 0.2s',
+                            '&:hover': {
+                              backgroundColor: isDark ? 'rgba(200, 139, 255, 0.08)' : 'rgba(168, 85, 247, 0.08)',
+                              transform: 'scale(1.15)',
+                            },
+                          }}
+                        >
+                          {requestingJoin[community._id] ? (
+                            <CircularProgress size={20} />
+                          ) : (
+                            <PersonAddIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </Tooltip>
+                    );
+                  };
+
+                  return (
+                    <ListItem
+                      key={community._id}
+                      secondaryAction={renderAction()}
+                      sx={{
+                        borderRadius: 3,
+                        mb: 0.75,
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '&:hover': {
+                          backgroundColor: hoverBg,
+                          transform: 'translateX(4px)',
+                        },
+                      }}
                     >
-                      <ListItemAvatar sx={{ pl: 2, py: 1 }}>
-                        <Avatar src={getImageUrl(community.avatarUrl)}>
-                          <GroupIcon />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={<Typography variant="body2" sx={{ fontWeight: 600 }}>{community.name}</Typography>}
-                        secondary={<Typography variant="caption" noWrap color="text.secondary" sx={{ display: 'block' }}>{community.description || 'Community'}</Typography>}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
+                      <ListItemButton
+                        onClick={() => community.isMember && onConversationSelect(community)}
+                        disabled={!community.isMember}
+                        sx={{ p: 0, borderRadius: 3 }}
+                      >
+                        <ListItemAvatar sx={{ pl: 2, py: 1 }}>
+                          <Avatar src={getImageUrl(community.avatarUrl)}>
+                            {community.isPublic === false ? <LockIcon fontSize="small" /> : <GroupIcon />}
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{community.name}</Typography>
+                              {community.isPublic === false && (
+                                <LockIcon sx={{ fontSize: 11, color: isDark ? '#C88BFF' : '#A855F7', opacity: 0.6 }} />
+                              )}
+                            </Box>
+                          }
+                          secondary={<Typography variant="caption" noWrap color="text.secondary" sx={{ display: 'block' }}>{community.description || 'Community'}</Typography>}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  );
+                })}
               </List>
             </Box>
 
@@ -924,6 +1262,13 @@ function ScrollBar({ onConversationSelect }) {
                 </Typography>
               </Box>
             )}
+
+            {/* Create Bubble Dialog */}
+            <CreateBubbleDialog
+              open={createDialogOpen}
+              onClose={() => setCreateDialogOpen(false)}
+              onCreated={handleCreateCommunity}
+            />
           </>
         )}
       </Box>
