@@ -11,6 +11,7 @@ import {
   Typography,
   CircularProgress,
   useTheme,
+  useMediaQuery,
   Alert,
   IconButton,
   InputAdornment,
@@ -38,6 +39,7 @@ function Login() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const authStatus = useSelector(selectAuthStatus);
   const authError = useSelector(selectAuthError);
@@ -135,11 +137,11 @@ function Login() {
         onSubmit={handleSubmit} 
         noValidate 
         sx={{ 
-          mt: 1.5, 
+          mt: { xs: 0.5, sm: 1.5 }, 
           width: '100%', 
           display: 'flex', 
           flexDirection: 'column', 
-          gap: 2 
+          gap: { xs: 1.25, sm: 2 } 
         }}
       >
         {/* Email Field */}
@@ -157,10 +159,15 @@ function Login() {
           error={!!validationErrors.email}
           helperText={validationErrors.email}
           disabled={loading}
+          size={isMobile ? 'small' : 'medium'}
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: '32px',
             },
+            '& .MuiFormHelperText-root': {
+              fontSize: { xs: '0.7rem', sm: '0.75rem' },
+              margin: '3px 14px 0',
+            }
           }}
         />
 
@@ -178,10 +185,15 @@ function Login() {
           error={!!validationErrors.password}
           helperText={validationErrors.password}
           disabled={loading}
+          size={isMobile ? 'small' : 'medium'}
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: '32px',
             },
+            '& .MuiFormHelperText-root': {
+              fontSize: { xs: '0.7rem', sm: '0.75rem' },
+              margin: '3px 14px 0',
+            }
           }}
           slotProps={{
             input: {
@@ -191,8 +203,9 @@ function Login() {
                     aria-label="toggle password visibility"
                     onClick={handleTogglePasswordVisibility}
                     edge="end"
+                    size={isMobile ? 'small' : 'medium'}
                   >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                    {showPassword ? <VisibilityOff fontSize={isMobile ? 'small' : 'medium'} /> : <Visibility fontSize={isMobile ? 'small' : 'medium'} />}
                   </IconButton>
                 </InputAdornment>
               ),
@@ -204,7 +217,7 @@ function Login() {
         {authStatus === 'failed' && authError && (
           <Alert 
             severity="error" 
-            sx={{ borderRadius: '16px' }}
+            sx={{ borderRadius: '16px', py: { xs: 0, sm: 1 }, fontSize: { xs: '0.75rem', sm: '0.85rem' } }}
             onClose={() => dispatch(clearAuthError())}
           >
             {authError}
@@ -218,7 +231,7 @@ function Login() {
             alignItems: 'center', 
             justifyContent: 'space-between',
             px: 1,
-            mt: -0.5
+            mt: { xs: -1, sm: -0.5 }
           }}
         >
           <FormControlLabel
@@ -232,11 +245,11 @@ function Login() {
                 size="small"
               />
             }
-            label={<Typography variant="body2">Remember me</Typography>}
+            label={<Typography variant={isMobile ? 'caption' : 'body2'}>Remember me</Typography>}
           />
           <MuiLink
             component="button"
-            variant="body2"
+            variant={isMobile ? 'caption' : 'body2'}
             onClick={() => navigate('/forgot-password')}
             sx={{ 
               cursor: 'pointer', 
@@ -265,12 +278,13 @@ function Login() {
           variant="contained"
           fullWidth
           sx={{
-            py: 1.25,
+            py: { xs: 0.8, sm: 1.25 },
             borderRadius: '32px',
             color: theme.palette.primary.contrastText,
             background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
             transition: 'transform 0.2s ease-in-out, opacity 0.2s',
             boxShadow: '0 8px 25px rgba(56, 123, 255, 0.25)',
+            fontSize: { xs: '0.825rem', sm: '0.875rem' },
             '&:hover': {
               transform: 'scale(1.02)',
               opacity: 0.95,
@@ -282,17 +296,17 @@ function Login() {
           }}
         >
           {loading ? (
-            <CircularProgress size={24} color="inherit" />
+            <CircularProgress size={isMobile ? 18 : 24} color="inherit" />
           ) : (
             'Sign In'
           )}
         </Button>
 
         {/* Sign Up Link */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 0.5 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: { xs: -0.5, sm: 0.5 } }}>
           <MuiLink
             component="button"
-            variant="body2"
+            variant={isMobile ? 'caption' : 'body2'}
             onClick={() => navigate('/register')}
             sx={{ 
               cursor: 'pointer', 
