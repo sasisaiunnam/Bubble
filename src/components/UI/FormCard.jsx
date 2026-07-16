@@ -79,14 +79,14 @@ function FormCard({ title, children }) {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            width: { xs: '100%', sm: 520 },
-            height: { xs: 'auto', sm: 520 },
-            borderRadius: { xs: '32px', sm: '50%' },
+            width: { xs: 340, sm: 520 },
+            height: { xs: 340, sm: 520 },
+            borderRadius: '50%',
             position: 'relative',
             overflow: 'hidden',
             textAlign: 'center',
-            p: { xs: 3.5, sm: 7 },
-            py: { xs: 4, sm: 7 },
+            p: { xs: 2.5, sm: 7 },
+            py: { xs: 3, sm: 7 },
             
             // Premium radial-gradient matching a 3D spherical light source
             background: isDark
@@ -128,11 +128,8 @@ function FormCard({ title, children }) {
               ? '1.5px solid rgba(152, 217, 255, 0.25)'
               : '1.5px solid rgba(56, 123, 255, 0.35)',
 
-            // Morphing bubble animation (only on desktop sphere)
-            animation: {
-              xs: 'none',
-              sm: `${bubbleMorph} 15s ease-in-out infinite`
-            },
+            // Morphing bubble animation
+            animation: `${bubbleMorph} 15s ease-in-out infinite`,
 
             // Spherical 3D glow shadow
             boxShadow: isDark
@@ -149,19 +146,19 @@ function FormCard({ title, children }) {
           }}
         >
           {/* Constrain child content inside the circular bounds */}
-          <Box sx={{ width: { xs: '90%', sm: '78%' }, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2 }}>
+          <Box sx={{ width: { xs: '84%', sm: '78%' }, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2 }}>
             {/* Pulsing Logo Header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5, gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 0.75, sm: 1.5 }, gap: 0.75 }}>
               <BubbleChartIcon
                 sx={{
                   color: 'primary.main',
-                  fontSize: 34,
+                  fontSize: { xs: 24, sm: 34 },
                   animation: `${pulse} 2s ease-in-out infinite`
                 }}
               />
               <Typography
-                variant="h4"
                 sx={{
+                  fontSize: { xs: 20, sm: 28 },
                   fontWeight: 800,
                   letterSpacing: -0.5,
                   background: 'linear-gradient(45deg, #387BFF 30%, #A855F7 90%)',
@@ -173,7 +170,7 @@ function FormCard({ title, children }) {
               </Typography>
             </Box>
 
-            <Typography component="h1" variant="h5" sx={{ mb: 2, fontWeight: 700, color: 'text.primary' }}>
+            <Typography component="h1" sx={{ mb: { xs: 1, sm: 2 }, fontSize: { xs: '1rem', sm: '1.35rem' }, fontWeight: 700, color: 'text.primary' }}>
               {title}
             </Typography>
 
