@@ -204,12 +204,14 @@ function UserProfile() {
               anchorEl={menuAnchor}
               open={Boolean(menuAnchor)}
               onClose={handleMenuClose}
-              PaperProps={{
-                sx: {
-                  mt: 1,
-                  borderRadius: 3,
-                  minWidth: 140,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+              slotProps={{
+                paper: {
+                  sx: {
+                    mt: 1,
+                    borderRadius: 3,
+                    minWidth: 140,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+                  }
                 }
               }}
             >

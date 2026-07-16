@@ -1,8 +1,7 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import { Box, Switch, FormControlLabel } from '@mui/material';
-import { LightMode, DarkMode } from '@mui/icons-material';
-import { useThemeToggle } from './components/AppThemeProvider';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { Box } from '@mui/material';
+import ThemeToggle from './components/UI/ThemeToggle';
 import Login from './pages/authPages/login';
 import AnimatedBackground from './components/UI/AnimatedBackground';
 import Register from './pages/authPages/Register';
@@ -18,17 +17,15 @@ import EditProfile from './pages/usersPage/EditProfile';
 import LocationPage from './pages/locationPages/location';
 
 function App() {
-  const { toggleTheme, mode } = useThemeToggle();
+  const location = useLocation();
+  const showFloatingToggle = location.pathname !== '/chat';
 
   return (
     <>
       <AnimatedBackground />
-      <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
-        <FormControlLabel
-          control={<Switch checked={mode === 'dark'} onChange={toggleTheme} />}
-          label={mode === 'dark' ? <DarkMode /> : <LightMode />}
-        />
-      </Box>
+      {showFloatingToggle && (
+        <ThemeToggle sx={{ position: 'absolute', top: 16, right: 16, zIndex: 1000 }} />
+      )}
       <Routes>
         {/* Public routes are only accessible to unauthenticated users */}
         <Route element={<PublicRoute />}>

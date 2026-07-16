@@ -6,6 +6,7 @@ import {
   Typography,
   CircularProgress,
   useTheme,
+  Alert,
 } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -64,12 +65,21 @@ function VerifyEmail() {
 
   return (
     <FormCard title="Verify & Register">
-      <Typography variant="body2" align="center" sx={{ mb: 2 }}>
+      <Typography variant="body2" align="center" sx={{ mb: 2, color: 'text.secondary' }}>
         An OTP has been sent to your email. Please enter it below to complete your registration.
       </Typography>
-      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
+      <Box 
+        component="form" 
+        onSubmit={handleSubmit} 
+        noValidate 
+        sx={{ 
+          width: '100%', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: 2 
+        }}
+      >
         <TextField
-          margin="normal"
           required
           fullWidth
           disabled // Email should not be editable at this stage
@@ -78,10 +88,9 @@ function VerifyEmail() {
           name="email"
           autoComplete="email"
           value={location.state?.email || ''}
-          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '50px' } }}
+          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '32px' } }}
         />
         <TextField
-          margin="normal"
           required
           fullWidth
           id="otp"
@@ -89,27 +98,28 @@ function VerifyEmail() {
           name="otp"
           value={otp}
           onChange={handleChange}
-          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '50px' } }}
+          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '32px' } }}
         />
         {error && (
-          <Typography color="error" variant="body2" align="center" sx={{ mt: 2 }}>
+          <Alert severity="error" sx={{ borderRadius: '16px' }} onClose={() => setError('')}>
             {error}
-          </Typography>
+          </Alert>
         )}
         <Button
           type="submit"
           fullWidth
           variant="contained"
           sx={{
-            mt: 3,
-            mb: 2,
-            borderRadius: '50px',
+            py: 1.25,
+            borderRadius: '32px',
             color: theme.palette.primary.contrastText,
             background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
             transition: 'transform 0.2s ease-in-out, opacity 0.2s',
+            boxShadow: '0 8px 25px rgba(56, 123, 255, 0.25)',
             '&:hover': {
-              transform: 'scale(1.05)',
-              opacity: 0.9,
+              transform: 'scale(1.02)',
+              opacity: 0.95,
+              background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
             },
           }}
         >
@@ -117,7 +127,7 @@ function VerifyEmail() {
         </Button>
 
         {/* Back to Register */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
           <Button
             startIcon={<ArrowBack />}
             onClick={() => navigate('/register')}

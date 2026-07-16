@@ -130,10 +130,20 @@ function Login() {
 
   return (
     <FormCard title="Sign in">
-      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
+      <Box 
+        component="form" 
+        onSubmit={handleSubmit} 
+        noValidate 
+        sx={{ 
+          mt: 1.5, 
+          width: '100%', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: 2 
+        }}
+      >
         {/* Email Field */}
         <TextField
-          margin="normal"
           required
           fullWidth
           id="email"
@@ -149,14 +159,13 @@ function Login() {
           disabled={loading}
           sx={{
             '& .MuiOutlinedInput-root': {
-              borderRadius: '50px',
+              borderRadius: '32px',
             },
           }}
         />
 
         {/* Password Field */}
         <TextField
-          margin="normal"
           required
           fullWidth
           name="password"
@@ -171,21 +180,23 @@ function Login() {
           disabled={loading}
           sx={{
             '& .MuiOutlinedInput-root': {
-              borderRadius: '50px',
+              borderRadius: '32px',
             },
           }}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label="toggle password visibility"
-                  onClick={handleTogglePasswordVisibility}
-                  edge="end"
-                >
-                  {showPassword ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={handleTogglePasswordVisibility}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
           }}
         />
 
@@ -193,7 +204,7 @@ function Login() {
         {authStatus === 'failed' && authError && (
           <Alert 
             severity="error" 
-            sx={{ mt: 2, borderRadius: '10px' }}
+            sx={{ borderRadius: '16px' }}
             onClose={() => dispatch(clearAuthError())}
           >
             {authError}
@@ -201,104 +212,107 @@ function Login() {
         )}
 
         {/* Remember Me & Forgot Password */}
-        <Grid container sx={{ mt: 1 }} alignItems="center" justifyContent="space-between">
-          <Grid item>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  name="rememberMe"
-                  color="primary"
-                  checked={formData.rememberMe}
-                  onChange={handleChange}
-                  disabled={loading}
-                />
-              }
-              label="Remember me"
-            />
-          </Grid>
-          <Grid item>
-            <MuiLink
-              component="button"
-              variant="body2"
-              onClick={() => navigate('/forgot-password')}
-              sx={{ 
-                cursor: 'pointer', 
-                background: 'none', 
-                border: 'none', 
-                color: 'inherit', 
-                textDecoration: 'underline',
-                '&:hover': {
-                  color: theme.palette.primary.main,
-                },
-                '&:disabled': {
-                  cursor: 'not-allowed',
-                  opacity: 0.5,
-                }
-              }}
-              disabled={loading}
-            >
-              Forgot password?
-            </MuiLink>
-          </Grid>
-        </Grid>
-
-        {/* Sign In Button */}
-        <Box display="flex" justifyContent="center" sx={{ mt: 3, mb: 2 }}>
-          <Button
-            type="submit"
-            disabled={loading}
-            variant="contained"
-            sx={{
-              width: '60%',
-              borderRadius: '50px',
-              color: theme.palette.primary.contrastText,
-              background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
-              transition: 'transform 0.2s ease-in-out, opacity 0.2s',
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            px: 1,
+            mt: -0.5
+          }}
+        >
+          <FormControlLabel
+            control={
+              <Checkbox
+                name="rememberMe"
+                color="primary"
+                checked={formData.rememberMe}
+                onChange={handleChange}
+                disabled={loading}
+                size="small"
+              />
+            }
+            label={<Typography variant="body2">Remember me</Typography>}
+          />
+          <MuiLink
+            component="button"
+            variant="body2"
+            onClick={() => navigate('/forgot-password')}
+            sx={{ 
+              cursor: 'pointer', 
+              background: 'none', 
+              border: 'none', 
+              color: 'inherit', 
+              textDecoration: 'underline',
               '&:hover': {
-                transform: 'scale(1.05)',
-                opacity: 0.9,
+                color: theme.palette.primary.main,
               },
               '&:disabled': {
-                opacity: 0.7,
-                transform: 'scale(0.98)',
-              },
+                cursor: 'not-allowed',
+                opacity: 0.5,
+              }
             }}
+            disabled={loading}
           >
-            {loading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              'Sign In'
-            )}
-          </Button>
+            Forgot password?
+          </MuiLink>
         </Box>
 
+        {/* Sign In Button */}
+        <Button
+          type="submit"
+          disabled={loading}
+          variant="contained"
+          fullWidth
+          sx={{
+            py: 1.25,
+            borderRadius: '32px',
+            color: theme.palette.primary.contrastText,
+            background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
+            transition: 'transform 0.2s ease-in-out, opacity 0.2s',
+            boxShadow: '0 8px 25px rgba(56, 123, 255, 0.25)',
+            '&:hover': {
+              transform: 'scale(1.02)',
+              opacity: 0.95,
+              background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
+            },
+            '&:disabled': {
+              opacity: 0.7,
+            },
+          }}
+        >
+          {loading ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            'Sign In'
+          )}
+        </Button>
+
         {/* Sign Up Link */}
-        <Grid container justifyContent="center">
-          <Grid item>
-            <MuiLink
-              component="button"
-              variant="body2"
-              onClick={() => navigate('/register')}
-              sx={{ 
-                cursor: 'pointer', 
-                background: 'none', 
-                border: 'none', 
-                color: 'inherit', 
-                textDecoration: 'underline',
-                '&:hover': {
-                  color: theme.palette.primary.main,
-                },
-                '&:disabled': {
-                  cursor: 'not-allowed',
-                  opacity: 0.5,
-                }
-              }}
-              disabled={loading}
-            >
-              {"Don't have an account? Sign Up"}
-            </MuiLink>
-          </Grid>
-        </Grid>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 0.5 }}>
+          <MuiLink
+            component="button"
+            variant="body2"
+            onClick={() => navigate('/register')}
+            sx={{ 
+              cursor: 'pointer', 
+              background: 'none', 
+              border: 'none', 
+              color: 'inherit', 
+              textDecoration: 'underline',
+              '&:hover': {
+                color: theme.palette.primary.main,
+              },
+              '&:disabled': {
+                cursor: 'not-allowed',
+                opacity: 0.5,
+              }
+            }}
+            disabled={loading}
+          >
+            {"Don't have an account? Sign Up"}
+          </MuiLink>
+        </Box>
       </Box>
     </FormCard>
   );

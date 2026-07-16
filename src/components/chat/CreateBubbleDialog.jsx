@@ -53,7 +53,7 @@ function CreateBubbleDialog({ open, onClose, onCreated }) {
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      setError('Community name is required');
+      setError('Bubble name is required');
       return;
     }
     if (name.trim().length < 3) {
@@ -104,18 +104,20 @@ function CreateBubbleDialog({ open, onClose, onCreated }) {
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 4,
-          background: isDark
-            ? 'rgba(17, 27, 43, 0.98)'
-            : 'rgba(255, 255, 255, 0.98)',
-          backdropFilter: 'blur(24px)',
-          border: `1px solid ${borderCol}`,
-          boxShadow: isDark
-            ? '0 32px 64px rgba(0, 0, 0, 0.6)'
-            : '0 32px 64px rgba(0, 0, 0, 0.15)',
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 4,
+            background: isDark
+              ? 'rgba(17, 27, 43, 0.98)'
+              : 'rgba(255, 255, 255, 0.98)',
+            backdropFilter: 'blur(24px)',
+            border: `1px solid ${borderCol}`,
+            boxShadow: isDark
+              ? '0 32px 64px rgba(0, 0, 0, 0.6)'
+              : '0 32px 64px rgba(0, 0, 0, 0.15)',
+          },
+        }
       }}
     >
       <DialogTitle

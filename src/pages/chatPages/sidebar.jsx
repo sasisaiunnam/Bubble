@@ -26,6 +26,7 @@ import {
 import { getImageUrl } from '../../utils/imageUrl';
 import { autoJoinBubble } from '../../services/communitySevice';
 import ScrollBar from '../../components/scrollBar/scrollBar';
+import ThemeToggle from '../../components/UI/ThemeToggle';
 
 const drawerWidth = 300;
 
@@ -105,31 +106,34 @@ function Sidebar({ onConversationSelect }) {
         >
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 {/* Stunning Logo Header */}
-                <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <BubbleChartIcon sx={{ 
-                        fontSize: 32, 
-                        color: 'primary.main',
-                        filter: 'drop-shadow(0 0 8px rgba(152, 217, 255, 0.6))',
-                        animation: 'pulse 2s infinite ease-in-out',
-                        '@keyframes pulse': {
-                            '0%, 100%': { transform: 'scale(1)', opacity: 0.8 },
-                            '50%': { transform: 'scale(1.1)', opacity: 1 },
-                        }
-                    }} />
-                    <Typography 
-                        variant="h5" 
-                        component="h1" 
-                        sx={{ 
-                            fontWeight: 800, 
-                            letterSpacing: '0.5px',
-                            background: 'linear-gradient(135deg, #98D9FF 0%, #C88BFF 100%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            textShadow: '0 0 30px rgba(200, 139, 255, 0.1)',
-                        }}
-                    >
-                        Bubble
-                    </Typography>
+                <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <BubbleChartIcon sx={{ 
+                            fontSize: 32, 
+                            color: 'primary.main',
+                            filter: 'drop-shadow(0 0 8px rgba(152, 217, 255, 0.6))',
+                            animation: 'pulse 2s infinite ease-in-out',
+                            '@keyframes pulse': {
+                                '0%, 100%': { transform: 'scale(1)', opacity: 0.8 },
+                                '50%': { transform: 'scale(1.1)', opacity: 1 },
+                            }
+                        }} />
+                        <Typography 
+                            variant="h5" 
+                            component="h1" 
+                            sx={{ 
+                                fontWeight: 800, 
+                                letterSpacing: '0.5px',
+                                background: 'linear-gradient(135deg, #98D9FF 0%, #C88BFF 100%)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                textShadow: '0 0 30px rgba(200, 139, 255, 0.1)',
+                            }}
+                        >
+                            Bubble
+                        </Typography>
+                    </Box>
+                    <ThemeToggle />
                 </Box>
                 <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.06)', mx: 2, mb: 1 }} />
 
@@ -202,19 +206,21 @@ function Sidebar({ onConversationSelect }) {
                     onClick={handleMenuClose}
                     transformOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                     anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
-                    PaperProps={{
-                        elevation: 0,
-                        sx: {
-                            overflow: 'visible',
-                            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
-                            mb: 1.5,
-                            '& .MuiAvatar-root': {
-                                width: 32,
-                                height: 32,
-                                ml: -0.5,
-                                mr: 1,
+                    slotProps={{
+                        paper: {
+                            elevation: 0,
+                            sx: {
+                                overflow: 'visible',
+                                filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                                mb: 1.5,
+                                '& .MuiAvatar-root': {
+                                    width: 32,
+                                    height: 32,
+                                    ml: -0.5,
+                                    mr: 1,
+                                },
                             },
-                        },
+                        }
                     }}
                 >
                     <MenuItem onClick={handleProfile} sx={{ gap: 1 }}>
