@@ -1127,7 +1127,6 @@ function ChatScreen({ conversation, onBack }) {
                 <IconButton
                   onClick={() => setCalendarOpen(true)}
                   sx={{
-                    fontSize: '1.4rem',
                     transition: 'transform 0.3s ease',
                     color: themeConfig ? themeConfig.textColor : 'inherit',
                     '&:hover': {
@@ -1135,7 +1134,7 @@ function ChatScreen({ conversation, onBack }) {
                     },
                   }}
                 >
-                  📅
+                  <CalendarMonthIcon />
                 </IconButton>
               </Tooltip>
 
@@ -1144,7 +1143,6 @@ function ChatScreen({ conversation, onBack }) {
                 <IconButton
                   onClick={(e) => setWallpaperMenuAnchor(e.currentTarget)}
                   sx={{
-                    fontSize: '1.4rem',
                     transition: 'transform 0.3s ease',
                     color: themeConfig ? themeConfig.textColor : 'inherit',
                     '&:hover': {
@@ -1152,7 +1150,7 @@ function ChatScreen({ conversation, onBack }) {
                     },
                   }}
                 >
-                  🖼️
+                  <WallpaperIcon />
                 </IconButton>
               </Tooltip>
 
@@ -1191,7 +1189,6 @@ function ChatScreen({ conversation, onBack }) {
                 <IconButton
                   onClick={cycleAnimeTheme}
                   sx={{
-                    fontSize: '1.4rem',
                     transition: 'transform 0.3s ease',
                     background: themeConfig ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
                     border: themeConfig ? '1px solid rgba(255, 255, 255, 0.25)' : 'none',
@@ -1201,7 +1198,7 @@ function ChatScreen({ conversation, onBack }) {
                     },
                   }}
                 >
-                  {themeConfig ? themeConfig.icon : '🎨'}
+                  {themeConfig ? themeConfig.icon : <PaletteIcon />}
                 </IconButton>
               </Tooltip>
 
