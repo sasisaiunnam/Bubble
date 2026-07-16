@@ -129,11 +129,11 @@ function ChatPage() {
                 dispatch(fetchUserCommunities());
               }
             } else {
-              // It's a Community Bubble (Group Chat)
+              // It's a Bubble (Group Chat)
               const newConv = {
                 conversationId: message.conversationId,
                 _id: message.conversationId,
-                name: 'Community Chat', // Fallback
+                name: 'Bubble Chat', // Fallback
                 type: 'Group',
                 unread: !isCurrentChat,
                 members: []

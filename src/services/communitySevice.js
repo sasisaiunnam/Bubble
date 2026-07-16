@@ -174,3 +174,15 @@ export const rejectJoinRequest = async (communityId, userId, token) => {
     );
     return data;
 };
+
+export const deleteCommunity = async (communityId, token) => {
+    const { data } = await axiosInstance.delete(
+        `/community/${communityId}`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+    return data;
+};

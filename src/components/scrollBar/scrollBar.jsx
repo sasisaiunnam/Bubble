@@ -62,7 +62,7 @@ import {
 import CreateBubbleDialog from '../chat/CreateBubbleDialog';
 
 function ScrollBar({ onConversationSelect }) {
-  const [activeTab, setActiveTab] = useState('communities');
+  const [activeTab, setActiveTab] = useState('bubbles');
   const [searchQuery, setSearchQuery] = useState('');
   
   // Suggestions State
@@ -248,7 +248,7 @@ function ScrollBar({ onConversationSelect }) {
     } else if (activeTab === 'friends') {
       fetchRequestsData();
       dispatch(getUserProfile());
-    } else if (activeTab === 'communities') {
+    } else if (activeTab === 'bubbles') {
       dispatch(fetchUserCommunities());
       fetchDiscoverableData();
       fetchInvitesData();
@@ -483,7 +483,7 @@ function ScrollBar({ onConversationSelect }) {
           icon={<GroupIcon fontSize="small" />} 
           iconPosition="start" 
           label="Bubbles" 
-          value="communities" 
+          value="bubbles" 
         />
       </Tabs>
 
@@ -491,7 +491,7 @@ function ScrollBar({ onConversationSelect }) {
       <Box sx={{ px: 2, mb: 1.5 }}>
         <TextField
           size="small"
-          placeholder={`Search ${activeTab === 'communities' ? 'bubbles' : activeTab}...`}
+          placeholder={`Search ${activeTab}...`}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           fullWidth
@@ -811,7 +811,7 @@ function ScrollBar({ onConversationSelect }) {
         {/* ============================================= */}
         {/* COMMUNITIES (BUBBLES) TAB                    */}
         {/* ============================================= */}
-        {activeTab === 'communities' && (
+        {activeTab === 'bubbles' && (
           <>
             {/* Create Bubble Button */}
             <Box sx={{ px: 1, mb: 1.5 }}>
@@ -986,7 +986,7 @@ function ScrollBar({ onConversationSelect }) {
                       </ListItemAvatar>
                       <ListItemText
                         primary={<Typography variant="body2" sx={{ fontWeight: 600 }}>{bubble.name}</Typography>}
-                        secondary={<Typography variant="caption" noWrap color="text.secondary" sx={{ display: 'block' }}>{bubble.description || 'Local community'}</Typography>}
+                        secondary={<Typography variant="caption" noWrap color="text.secondary" sx={{ display: 'block' }}>{bubble.description || 'Local bubble'}</Typography>}
                       />
                     </ListItemButton>
                   ))}
@@ -994,7 +994,7 @@ function ScrollBar({ onConversationSelect }) {
               </Box>
             )}
 
-            {/* My Communities */}
+            {/* My Bubbles */}
             {otherCommunities.length > 0 && (
               <Box sx={{ mb: 2 }}>
                 <Typography
@@ -1013,7 +1013,7 @@ function ScrollBar({ onConversationSelect }) {
                     display: 'inline-block',
                   }}
                 >
-                  My Communities
+                  My Bubbles
                 </Typography>
                 <List sx={{ p: 0, mt: 0.75 }}>
                   {otherCommunities.map((bubble) => (
@@ -1044,7 +1044,7 @@ function ScrollBar({ onConversationSelect }) {
                             )}
                           </Box>
                         }
-                        secondary={<Typography variant="caption" noWrap color="text.secondary" sx={{ display: 'block' }}>{bubble.description || 'Community'}</Typography>}
+                        secondary={<Typography variant="caption" noWrap color="text.secondary" sx={{ display: 'block' }}>{bubble.description || 'Bubble'}</Typography>}
                       />
                     </ListItemButton>
                   ))}
@@ -1052,7 +1052,7 @@ function ScrollBar({ onConversationSelect }) {
               </Box>
             )}
 
-            {/* Discover Communities */}
+            {/* Discover Bubbles */}
             <Box>
               <Typography
                 variant="caption"
@@ -1070,7 +1070,7 @@ function ScrollBar({ onConversationSelect }) {
                   display: 'inline-block',
                 }}
               >
-                Discover Communities
+                Discover Bubbles
               </Typography>
 
               {discoverable.loading && (
@@ -1088,7 +1088,7 @@ function ScrollBar({ onConversationSelect }) {
               {!discoverable.loading && filteredDiscoverable.length === 0 && (
                 <Box sx={{ p: 3, textAlign: 'center' }}>
                   <Typography color="text.secondary" variant="body2">
-                    No discoverable communities
+                    No discoverable bubbles
                   </Typography>
                 </Box>
               )}
@@ -1163,7 +1163,7 @@ function ScrollBar({ onConversationSelect }) {
                     // Public community — direct join
                     if (community.isPublic) {
                       return (
-                        <Tooltip title="Join Community">
+                        <Tooltip title="Join Bubble">
                           <IconButton
                             edge="end"
                             color="primary"
@@ -1246,7 +1246,7 @@ function ScrollBar({ onConversationSelect }) {
                               )}
                             </Box>
                           }
-                          secondary={<Typography variant="caption" noWrap color="text.secondary" sx={{ display: 'block' }}>{community.description || 'Community'}</Typography>}
+                          secondary={<Typography variant="caption" noWrap color="text.secondary" sx={{ display: 'block' }}>{community.description || 'Bubble'}</Typography>}
                         />
                       </ListItemButton>
                     </ListItem>
@@ -1258,7 +1258,7 @@ function ScrollBar({ onConversationSelect }) {
             {communities.length === 0 && !discoverable.loading && (
               <Box sx={{ p: 3, textAlign: 'center' }}>
                 <Typography color="text.secondary" variant="body2">
-                  You haven't joined any communities yet.
+                  You haven't joined any bubbles yet.
                 </Typography>
               </Box>
             )}

@@ -27,4 +27,21 @@ db.version(2).stores({
   chatImages: '++id, &imageId, conversationId',
 });
 
+db.version(3).stores({
+  conversations: '++id, &conversationId, name',
+  messages: '++id, conversationId, timestamp, isPending',
+  users: '&userId, username',
+  keyStore: '&keyName',
+  chatImages: '++id, &imageId, conversationId',
+});
+
+db.version(4).stores({
+  conversations: '++id, &conversationId, name',
+  messages: '++id, conversationId, timestamp, isPending',
+  users: '&userId, username',
+  keyStore: '&keyName',
+  chatImages: '++id, &imageId, conversationId',
+  reminders: '++id, conversationId, title, timestamp, isCompleted',
+});
+
 export default db;

@@ -207,24 +207,34 @@ function ForgotPassword() {
         </Alert>
       )}
 
-      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
+      <Box 
+        component="form" 
+        onSubmit={handleSubmit} 
+        noValidate 
+        sx={{ 
+          width: '100%', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: 2 
+        }}
+      >
         <Paper
           elevation={0}
           sx={{
             p: 2,
             borderRadius: '16px',
-            background: 'linear-gradient(180deg, rgba(235, 245, 255, 0.95), rgba(255, 255, 255, 0.95))',
-            border: '1px solid rgba(25, 118, 210, 0.1)',
+            background: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+            border: '1px solid',
+            borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
             <Email sx={{ mr: 1, color: 'primary.main', fontSize: 20 }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main' }}>
               Email Address
             </Typography>
           </Box>
           <TextField
-            margin="none"
             required
             fullWidth
             id="email"
@@ -238,16 +248,16 @@ function ForgotPassword() {
             error={!!validationError || !!authError}
             helperText={validationError}
             disabled={loading || isSuccess}
-            InputProps={{
-              endAdornment: email && !validationError && (
-                <InputAdornment position="end">
-                  <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '28px',
+            slotProps={{
+              input: {
+                endAdornment: email && !validationError && (
+                  <InputAdornment position="end">
+                    <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+                sx: {
+                  borderRadius: '28px',
+                }
               },
             }}
           />
@@ -259,20 +269,19 @@ function ForgotPassword() {
           variant="contained"
           disabled={loading || isSuccess || !email}
           sx={{
-            mt: 3,
-            mb: 2,
-            borderRadius: '50px',
-            py: 1.5,
-            height: '52px',
+            borderRadius: '32px',
+            py: 1.25,
+            color: theme.palette.primary.contrastText,
             background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
             transition: 'transform 0.2s ease-in-out, opacity 0.2s',
+            boxShadow: '0 8px 25px rgba(56, 123, 255, 0.25)',
             '&:hover': {
               transform: 'scale(1.02)',
-              opacity: 0.9,
+              opacity: 0.95,
+              background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
             },
             '&:disabled': {
               opacity: 0.7,
-              transform: 'scale(0.98)',
             },
           }}
         >
@@ -286,7 +295,7 @@ function ForgotPassword() {
         </Button>
 
         {/* Back to Login */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
           <Button
             startIcon={<ArrowBack />}
             onClick={() => navigate('/login')}
@@ -309,7 +318,7 @@ function ForgotPassword() {
               color="primary"
               onClick={handleNavigateToReset}
               sx={{
-                borderRadius: '50px',
+                borderRadius: '32px',
                 textTransform: 'none',
                 px: 3,
               }}
@@ -320,7 +329,7 @@ function ForgotPassword() {
         </Box>
 
         {/* Help Text */}
-        <Box sx={{ mt: 3, textAlign: 'center' }}>
+        <Box sx={{ mt: 1, textAlign: 'center' }}>
           <Typography variant="caption" color="text.secondary">
             <strong>Note:</strong> The OTP will expire in 10 minutes.
             If you don't receive the email, check your spam folder.
