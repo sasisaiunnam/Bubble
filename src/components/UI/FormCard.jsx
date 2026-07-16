@@ -79,14 +79,15 @@ function FormCard({ title, children }) {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            width: { xs: 360, sm: 520 },
-            height: { xs: 360, sm: 520 },
-            borderRadius: '50%',
+            width: { xs: '100%', sm: 520 },
+            height: { xs: 'auto', sm: 520 },
+            borderRadius: { xs: '32px', sm: '50%' },
             position: 'relative',
             overflow: 'hidden',
             textAlign: 'center',
-            p: { xs: 4, sm: 7 },
-
+            p: { xs: 3.5, sm: 7 },
+            py: { xs: 4, sm: 7 },
+            
             // Premium radial-gradient matching a 3D spherical light source
             background: isDark
               ? 'radial-gradient(circle at 30% 30%, rgba(21, 38, 70, 0.9) 0%, rgba(8, 15, 30, 0.96) 80%)'
@@ -127,8 +128,11 @@ function FormCard({ title, children }) {
               ? '1.5px solid rgba(152, 217, 255, 0.25)'
               : '1.5px solid rgba(56, 123, 255, 0.35)',
 
-            // Morphing bubble animation
-            animation: `${bubbleMorph} 15s ease-in-out infinite`,
+            // Morphing bubble animation (only on desktop sphere)
+            animation: {
+              xs: 'none',
+              sm: `${bubbleMorph} 15s ease-in-out infinite`
+            },
 
             // Spherical 3D glow shadow
             boxShadow: isDark
@@ -145,7 +149,7 @@ function FormCard({ title, children }) {
           }}
         >
           {/* Constrain child content inside the circular bounds */}
-          <Box sx={{ width: '78%', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2 }}>
+          <Box sx={{ width: { xs: '90%', sm: '78%' }, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2 }}>
             {/* Pulsing Logo Header */}
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5, gap: 1 }}>
               <BubbleChartIcon
