@@ -13,6 +13,9 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import db from '../../db';
 
 function CalendarDrawer({ open, onClose, conversationId, themeConfig }) {
@@ -161,8 +164,8 @@ function CalendarDrawer({ open, onClose, conversationId, themeConfig }) {
           color: themeConfig ? themeConfig.textColor : 'text.primary',
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: 'inherit' }}>
-          📅 Chat Reminders
+        <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CalendarMonthIcon /> Chat Reminders
         </Typography>
         <IconButton onClick={onClose} size="small" sx={{ color: 'inherit' }}>
           <CloseIcon />
@@ -172,15 +175,15 @@ function CalendarDrawer({ open, onClose, conversationId, themeConfig }) {
       {/* Calendar Month Selector */}
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', mb: 2 }}>
-          <Button size="small" onClick={handlePrevMonth} sx={{ color: themeConfig ? themeConfig.textColor : 'primary.main', minWidth: 40, fontFamily: 'inherit' }}>
-            ◀
-          </Button>
+          <IconButton size="small" onClick={handlePrevMonth} sx={{ color: themeConfig ? themeConfig.textColor : 'primary.main' }}>
+            <ChevronLeftIcon />
+          </IconButton>
           <Typography sx={{ fontWeight: 700, fontFamily: 'inherit', color: themeConfig ? themeConfig.textColor : 'text.primary' }}>
             {monthNames[month]} {year}
           </Typography>
-          <Button size="small" onClick={handleNextMonth} sx={{ color: themeConfig ? themeConfig.textColor : 'primary.main', minWidth: 40, fontFamily: 'inherit' }}>
-            ▶
-          </Button>
+          <IconButton size="small" onClick={handleNextMonth} sx={{ color: themeConfig ? themeConfig.textColor : 'primary.main' }}>
+            <ChevronRightIcon />
+          </IconButton>
         </Box>
 
         {/* Weekdays Row */}
@@ -330,7 +333,7 @@ function CalendarDrawer({ open, onClose, conversationId, themeConfig }) {
         }}
       >
         <Typography variant="subtitle2" sx={{ fontWeight: 700, fontFamily: 'inherit', color: themeConfig ? themeConfig.textColor : 'text.primary' }}>
-          ➕ Add Reminder
+          Add Reminder
         </Typography>
         <TextField
           size="small"
